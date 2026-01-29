@@ -8,13 +8,12 @@
 *.swo
 *~
 
-# Логи и временные файлы
-*.log
+# Временные файлы проекта
+api_port.txt
 *.tmp
 *.temp
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+*.log
+chat_*.json
 
 # Файлы зависимостей
 node_modules/
@@ -29,57 +28,34 @@ ENV/
 env.bak/
 venv.bak/
 
-# Файлы конфигурации среды
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Тестовые и временные файлы
+test-*.html
+*-test.html
+index-redirect.html
 
-# Файлы сборки
-dist/
-build/
-out/
-*.class
-*.jar
-*.war
-*.ear
-
-# Файлы операционной системы
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# Старые версии скриптов (кроме WORK.command)
+GO.command
+LAUNCH.command  
+QUICK.command
+RUN_OLD.command
+start*.command
+start*.sh
 
 # Файлы редакторов
 *.sublime-*
 *.code-*
 
-# Файлы проекта
-api_port.txt
-chat_*.json
-*.dot
-*.png
-*.jpg
-*.jpeg
-*.gif
+# Логи
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Игнорируем тестовые и временные HTML файлы
-test-*.html
-simple-*.html
-index-redirect.html
+# Сборка
+dist/
+build/
+out/
 
-# Игнорируем старые версии файлов
-*.old
-*.bak
-*.backup
-
-# Игнорируем пользовательские данные
-*.data
-*.db
-*.sqlite
-*.sqlite3
-
-# Файлы запуска (скрипты могут различаться)
-RUN_OLD.command
-start-old.command
-simple-proxy.js
+# Системные
+Thumbs.db
+ehthumbs.db
+Desktop.ini
