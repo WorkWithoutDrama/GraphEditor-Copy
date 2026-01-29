@@ -22,7 +22,7 @@ const server = http.createServer((req, res) => {
     // Проксируем к API
     if (url.startsWith('/api/')) {
         // Читаем порт API из файла
-        let apiPort = 5000;
+        let apiPort = 5001;
         try {
             if (fs.existsSync('api_port.txt')) {
                 apiPort = parseInt(fs.readFileSync('api_port.txt', 'utf8').trim());
@@ -110,7 +110,7 @@ const server = http.createServer((req, res) => {
         
     } else if (url === '/get-port') {
         // Endpoint для получения порта API
-        let apiPort = 5000;
+        let apiPort = 5001;
         try {
             if (fs.existsSync('api_port.txt')) {
                 apiPort = parseInt(fs.readFileSync('api_port.txt', 'utf8').trim());

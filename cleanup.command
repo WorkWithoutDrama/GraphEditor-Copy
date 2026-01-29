@@ -5,12 +5,12 @@ echo "==============================="
 echo ""
 
 # Проверяем процессы на портах
-echo "🔍 Поиск процессов на портах 3000 и 5000..."
+echo "🔍 Поиск процессов на портах 3000 и 5001..."
 
 PROCESSES_3000=$(lsof -ti:3000 2>/dev/null)
-PROCESSES_5000=$(lsof -ti:5000 2>/dev/null)
+PROCESSES_5001=$(lsof -ti:5001 2>/dev/null)
 
-if [ -n "$PROCESSES_3000" ] || [ -n "$PROCESSES_5000" ]; then
+if [ -n "$PROCESSES_3000" ] || [ -n "$PROCESSES_5001" ]; then
     echo "📋 Найдены процессы:"
     
     if [ -n "$PROCESSES_3000" ]; then
@@ -20,9 +20,9 @@ if [ -n "$PROCESSES_3000" ] || [ -n "$PROCESSES_5000" ]; then
         done
     fi
     
-    if [ -n "$PROCESSES_5000" ]; then
-        echo "   Порт 5000:"
-        for pid in $PROCESSES_5000; do
+    if [ -n "$PROCESSES_5001" ]; then
+        echo "   Порт 5001:"
+        for pid in $PROCESSES_5001; do
             echo "   • PID $pid: $(ps -p $pid -o comm= 2>/dev/null || echo 'неизвестный процесс')"
         done
     fi
@@ -40,18 +40,18 @@ if [ -n "$PROCESSES_3000" ] || [ -n "$PROCESSES_5000" ]; then
             echo "   ✅ Порт 3000 очищен"
         fi
         
-        if [ -n "$PROCESSES_5000" ]; then
-            kill -9 $PROCESSES_5000 2>/dev/null
-            echo "   ✅ Порт 5000 очищен"
+        if [ -n "$PROCESSES_5001" ]; then
+            kill -9 $PROCESSES_5001 2>/dev/null
+            echo "   ✅ Порт 5001 очищен"
         fi
-        
+
         sleep 1
-        
+
         # Проверяем еще раз
         REMAINING_3000=$(lsof -ti:3000 2>/dev/null)
-        REMAINING_5000=$(lsof -ti:5000 2>/dev/null)
+        REMAINING_5001=$(lsof -ti:5001 2>/dev/null)
         
-        if [ -z "$REMAINING_3000" ] && [ -z "$REMAINING_5000" ]; then
+        if [ -z "$REMAINING_3000" ] && [ -z "$REMAINING_5001" ]; then
             echo ""
             echo "✅ Все порты свободны!"
             echo "Теперь можно запустить: ./RUN.command"
@@ -61,15 +61,15 @@ if [ -n "$PROCESSES_3000" ] || [ -n "$PROCESSES_5000" ]; then
             if [ -n "$REMAINING_3000" ]; then
                 echo "   Порт 3000: $(echo $REMAINING_3000 | wc -w) процессов"
             fi
-            if [ -n "$REMAINING_5000" ]; then
-                echo "   Порт 5000: $(echo $REMAINING_5000 | wc -w) процессов"
+            if [ -n "$REMAINING_5001" ]; then
+                echo "   Порт 5001: $(echo $REMAINING_5001 | wc -w) процессов"
             fi
         fi
     else
         echo "ℹ️  Процессы не остановлены"
     fi
 else
-    echo "✅ Порта 3000 и 5000 свободны"
+    echo "✅ Порта 3000 и 5001 свободны"
     echo "Можно запускать: ./RUN.command"
 fi
 

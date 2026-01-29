@@ -25,7 +25,7 @@ echo ✅ AI API сервер запущен
 timeout /t 2 /nobreak >nul
 
 echo 🔧 Запуск прокси сервера...
-start /B node proxy-server.js
+start /B node simple-proxy.js
 echo ✅ Прокси сервер запущен
 
 timeout /t 2 /nobreak >nul
@@ -36,7 +36,7 @@ start http://localhost:3000/proxy-index.html
 echo.
 echo ✅ Система запущена!
 echo 📊 Состояние:
-echo    AI API:    http://localhost:5000/api/health
+echo    AI API:    http://localhost:5001/api/health
 echo    Прокси:    http://localhost:3000
 echo    Редактор:  http://localhost:3000/proxy-index.html
 echo.
