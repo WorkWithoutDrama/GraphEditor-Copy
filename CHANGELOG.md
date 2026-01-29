@@ -8,6 +8,7 @@
 - **Ссылка на несуществующий файл**: Исправлен start-full.bat для использования simple-proxy.js вместо proxy-server.js
 - **Динамические порты**: API сервер теперь пробует порты 5001-5010 и сохраняет выбранный порт в api_port.txt
 - **Прокси-конфигурация**: simple-proxy.js читает порт API из api_port.txt
+- **Неправильный путь API**: Исправлен путь к API endpoint в graph-manager.js с `/generate-model` на `/api/generate-model`
 - **Документация**: Обновлены README-STRICT.md, cleanup.command и RUN_OLD.command для отражения изменений портов
 - **Очистка процессов**: Скрипты очистки теперь проверяют правильные порты (3000 и 5001)
 
