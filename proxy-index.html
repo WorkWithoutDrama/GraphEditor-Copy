@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph Editor (via Proxy)</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+</head>
+<body>
+
+    <div class="controls">
+        <button id="loadButton" class="primary">Выбрать проект</button>
+        <input type="file" id="fileInput" accept=".json" style="display: none;">
+        <button id="saveButton" class="primary">Сохранить проект</button>
+        <button id="addActionButton">Добавить Действие</button>
+        <button id="addStateButton">Добавить Объект</button>
+        <button id="addLinkButton" class="success">+ Связь (1 → 2)</button>
+        <button id="removeLinkButton" class="danger">- Связь</button>
+        <button id="deleteSelectedButton" class="danger">Удалить (Del)</button>
+        <button id="runLayoutButton">Обновить компоновку</button>
+        <button id="graphManagerButton" class="primary">Graph Manager</button>
+        <span class="hint">Сначала клик на <b>Источник</b>, затем на <b>Цель</b>.</span>
+    </div>
+
+    <div class="main-container">
+        <div id="cy"></div>
+        
+        <div class="resizer" id="resizer"></div>
+        
+        <div class="chat-container" id="chatContainer" style="display: none;">
+            <div class="chat-header">
+                <h3>Graph Manager</h3>
+                <div class="chat-header-buttons">
+                    <button class="header-btn" id="clearChatBtn" title="Очистить историю">🗑️</button>
+                    <button class="close-btn" id="closeChatBtn">×</button>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Сообщение будет добавлено автоматически -->
+            </div>
+            <div class="chat-input-container">
+                <textarea id="chatInput" placeholder="Введите описание системы или загрузите файл..."></textarea>
+                <div class="chat-actions">
+                    <input type="file" id="fileUpload" accept=".txt,.md,.pdf" style="display: none;">
+                    <button id="uploadFileBtn" class="secondary">📎 Файл</button>
+                    <button id="sendMessageBtn" class="primary">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключаем скрипты с правильными путями -->
+    <script>
+        // Базовая настройка путей
+        window.API_BASE_URL = 'http://localhost:3000';
+    </script>
+    <script src="script.js"></script>
+    <script src="graph-manager.js"></script>
+    
+    <script>
+        // Переопределяем GraphManager для работы через прокси
+        class ProxyGraphManager extends window.GraphManager {
+            async checkAPIStatus() {
+                try {
+                    const response = await fetch(`${window.API_BASE_URL}/api/health`, {
+                        method: 'GET',
+                        mode: 'cors',
+                        cache: 'no-cache'
+                    });
+                    
+                    this.apiAvailable = response.ok;
+                    console.log(this.apiAvailable ? '✅ API доступен через прокси' : '⚠️ API недоступен');
+                    
+                    // Обновляем приветственное сообщение
+                    const welcomeMessage = document.querySelector('.bot-message');
+                    if (welcomeMessage) {
+                        welcomeMessage.textContent = this.apiAvailable ? 
+                            '👋 Graph Manager готов к работе через прокси-сервер!' :
+                            '👋 Graph Manager в демо-режиме (API недоступен)';
+                    }
+                    
+                } catch (error) {
+                    this.apiAvailable = false;
+                    console.log('❌ API недоступен:', error.message);
+                }
+            }
+            
+            async generateModelFromText(text) {
+                try {
+                    const response = await fetch(`${window.API_BASE_URL}/api/generate-model`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text }),
+                        mode: 'cors'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                    
+                } catch (error) {
+                    console.log('API недоступен, использую демо-режим:', error.message);
+                    
+                    // Fallback на родительский метод
+                    return super.generateModelFromText(text);
+                }
+            }
+        }
+        
+        // Заменяем GraphManager на ProxyGraphManager
+        window.GraphManager = ProxyGraphManager;
+        
+        // Инициализация после загрузки DOM
+        window.addEventListener('DOMContentLoaded', () => {
+            // Уже есть renderGraph вызов в script.js
+            // Инициализируем GraphManager
+            if (window.graphManager) {
+                window.graphManager = new ProxyGraphManager();
+            }
+        });
+    </script>
+</body>
+</html>
