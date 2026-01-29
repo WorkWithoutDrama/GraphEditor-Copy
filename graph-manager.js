@@ -347,7 +347,7 @@ class GraphManager {
         }
         
         try {
-            const apiUrl = `${this.apiBaseUrl}/generate-model`;
+            const apiUrl = `${this.apiBaseUrl}/api/generate-model`;
             console.log(`📤 Отправляю запрос к API: ${apiUrl}`);
             
             const response = await fetch(apiUrl, {
