@@ -26,7 +26,7 @@ A web-based graph editor with integrated AI assistant that converts system descr
 ## 🏗️ Architecture
 
 ```
-Browser → Proxy (localhost:3000) → AI API (localhost:5000+)
+Browser → Proxy (localhost:3000) → AI API (localhost:5001+)
 ```
 
 ## 📁 Files
@@ -108,7 +108,7 @@ start-full.bat
 ```bash
 python api.py
 ```
-**Должно появиться:** `Запуск API сервера на порту 5000...`
+**Должно появиться:** `Запуск API сервера на порту 5001...`
 
 #### Терминал 2: Прокси сервер
 ```bash
@@ -142,12 +142,12 @@ http://localhost:3000/proxy-index.html
 
 ## Архитектура:
 ```
-[Ваш браузер] → [Прокси (localhost:3000)] → [AI API (localhost:5000)]
+[Ваш браузер] → [Прокси (localhost:3000)] → [AI API (localhost:5001)]
 ```
 
 ## Проверка работы:
 
-1. **AI API сервер:** http://localhost:5000/api/health
+1. **AI API сервер:** http://localhost:5001/api/health
    - Должен вернуть `{"status": "ok"}`
 
 2. **Прокси сервер:** http://localhost:3000
@@ -167,7 +167,7 @@ http://localhost:3000/proxy-index.html
 ### ❌ "API недоступен"
 Убедитесь, что `api.py` запущен и отвечает:
 ```bash
-curl http://localhost:5000/api/health
+curl http://localhost:5001/api/health
 ```
 
 ### ❌ "CORS ошибка"

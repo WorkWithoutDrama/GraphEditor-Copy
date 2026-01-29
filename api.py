@@ -135,8 +135,8 @@ class SystemModelHandler(BaseHTTPRequestHandler):
         logger.info(f"{self.address_string()} - {format % args}")
 
 def run_server():
-    # Пробуем порты начиная с 5000
-    for port in range(5000, 5010):
+    # Пробуем порты начиная с 5001
+    for port in range(5001, 5011):
         try:
             server_address = ('', port)
             httpd = HTTPServer(server_address, SystemModelHandler)
@@ -160,7 +160,7 @@ def run_server():
             else:
                 raise
     
-    logger.error("Не удалось найти свободный порт (5000-5009)")
+    logger.error("Не удалось найти свободный порт (5001-5010)")
 
 if __name__ == '__main__':
     run_server()

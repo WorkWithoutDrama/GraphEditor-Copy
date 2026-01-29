@@ -21,24 +21,24 @@ const server = http.createServer((req, res) => {
         // Проксируем к API
         if (url.startsWith('/api/')) {
             // Читаем порт API из файла
-            let apiPort = 5000;
+            let apiPort = 5001;
             try {
                 if (fs.existsSync('api_port.txt')) {
                     apiPort = parseInt(fs.readFileSync('api_port.txt', 'utf8').trim());
                     console.log(`📡 Проксирую к порту: ${apiPort}`);
                 } else {
-                    console.log('⚠️ Файл api_port.txt не найден, использую порт 5000');
+                    console.log('⚠️ Файл api_port.txt не найден, использую порт 5001');
                 }
             } catch (e) {
                 console.log('❌ Не удалось прочитать порт API:', e.message);
-                apiPort = 5000;
+                apiPort = 5001;
             }
 
             const apiUrl = `http://localhost:${apiPort}${url}`;
         
         const options = {
             hostname: 'localhost',
-            port: 5000,
+            port: apiPort,
             path: url,
             method: req.method,
             headers: req.headers
@@ -113,7 +113,7 @@ const server = http.createServer((req, res) => {
 
     } else if (url === '/get-port') {
         // Endpoint для получения порта API
-        let apiPort = 5000;
+        let apiPort = 5001;
         try {
             if (fs.existsSync('api_port.txt')) {
                 apiPort = parseInt(fs.readFileSync('api_port.txt', 'utf8').trim());
@@ -147,10 +147,9 @@ const server = http.createServer((req, res) => {
             res.end(data);
         });
     }
-    }
 });
 
 server.listen(PORT, () => {
     console.log(`🚀 Прокси сервер запущен на http://localhost:${PORT}`);
-    console.log(`📡 Проксирует к http://localhost:5000`);
+    console.log(`📡 Проксирует к http://localhost:5001`);
 });
