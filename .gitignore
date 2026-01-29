@@ -33,13 +33,14 @@ test-*.html
 *-test.html
 index-redirect.html
 
-# Старые версии скриптов (кроме WORK.command)
+# Старые версии скриптов (кроме WORK.command и launch.command)
 GO.command
-LAUNCH.command  
+LAUNCH.command
 QUICK.command
 RUN_OLD.command
 start*.command
 start*.sh
+!launch.command
 
 # Файлы редакторов
 *.sublime-*
