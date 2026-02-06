@@ -574,8 +574,7 @@ class GraphManager {
                             data: {
                                 id: `${sourceId}->${targetId}`,
                                 source: sourceId,
-                                target: targetId,
-                                label: 'связь'
+                                target: targetId
                             }
                         });
                         console.log(`✅ Добавлена связь: ${sourceId} -> ${targetId}`);

@@ -462,8 +462,7 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                     
                     model["model_connections"].append({
                         "connection_out": connection_out,
-                        "connection_in": connection_in,
-                        "connection_label": conn.get("name") or conn.get("label") or "связь"
+                        "connection_in": connection_in
                     })
         
         return model
@@ -551,13 +550,11 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                 if obj["resource_state"]:
                     connections.append({
                         "connection_out": f"{obj['object_id']}s00001",
-                        "connection_in": action["action_id"],
-                        "connection_label": "инициирует"
+                        "connection_in": action["action_id"]
                     })
                     connections.append({
                         "connection_out": action["action_id"],
-                        "connection_in": f"{obj['object_id']}s00002",
-                        "connection_label": "активирует"
+                        "connection_in": f"{obj['object_id']}s00002"
                     })
         
         return {
