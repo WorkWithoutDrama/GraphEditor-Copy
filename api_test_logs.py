@@ -75,6 +75,48 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                             "action_name": f"Тестовое действие из '{text[:20]}...'",
                             "action_links": {"manual": "", "API": "", "UI": ""}
                         }
+                    ],
+                    "model_objects": [
+                        {
+                            "object_id": f"o{(timestamp + 1) % 100000:05d}",
+                            "object_name": "Пользователь",
+                            "resource_state": [
+                                {
+                                    "state_id": "s00001",
+                                    "state_name": "неактивен"
+                                },
+                                {
+                                    "state_id": "s00002",
+                                    "state_name": "активен"
+                                }
+                            ]
+                        },
+                        {
+                            "object_id": f"o{(timestamp + 2) % 100000:05d}",
+                            "object_name": "Система",
+                            "resource_state": [
+                                {
+                                    "state_id": "s00003",
+                                    "state_name": "ожидает"
+                                },
+                                {
+                                    "state_id": "s00004",
+                                    "state_name": "обработано"
+                                }
+                            ]
+                        }
+                    ],
+                    "model_connections": [
+                        {
+                            "connection_out": f"o{(timestamp + 1) % 100000:05d}s00001",
+                            "connection_in": f"a{timestamp % 100000:05d}",
+                            "connection_label": "инициирует"
+                        },
+                        {
+                            "connection_out": f"a{timestamp % 100000:05d}",
+                            "connection_in": f"o{(timestamp + 1) % 100000:05d}s00002",
+                            "connection_label": "активирует"
+                        }
                     ]
                 }
                 

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест формата API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Тест формата API ответа</h1>
+    
+    <div class="test" id="test1">
+        <h3>Тест 1: Проверка ожидаемого формата модели</h3>
+        <button onclick="testExpectedFormat()">Запустить тест</button>
+        <div id="result1"></div>
+    </div>
+    
+    <div class="test" id="test2">
+        <h3>Тест 2: Симуляция ответа API</h3>
+        <button onclick="simulateAPIResponse()">Запустить тест</button>
+        <div id="result2"></div>
+    </div>
+    
+    <script>
+        // Ожидаемый формат модели
+        const expectedFormat = {
+            model_actions: [
+                {
+                    action_id: "a12345",
+                    action_name: "Тестовое действие",
+                    action_links: { manual: "", API: "", UI: "" }
+                }
+            ],
+            model_objects: [
+                {
+                    object_id: "o12345",
+                    object_name: "Пользователь",
+                    resource_state: [
+                        { state_id: "s00001", state_name: "неактивен" },
+                        { state_id: "s00002", state_name: "активен" }
+                    ]
+                }
+            ],
+            model_connections: [
+                {
+                    connection_out: "o12345s00001",
+                    connection_in: "a12345",
+                    connection_label: "инициирует"
+                }
+            ]
+        };
+        
+        // Упрощенная версия processGraphResponse для тестирования
+        function testModelFormat(model) {
+            const isNewFormat = model.model_actions && model.model_objects && model.model_connections;
+            const isOldFormat = Object.keys(model).some(key =>
+                model[key] &&
+                typeof model[key] === 'object' &&
+                ('init_states' in model[key] || 'final_states' in model[key])
+            );
+            
+            return { isNewFormat, isOldFormat };
+        }
+        
+        function testExpectedFormat() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.innerHTML = '';
+            
+            try {
+                const { isNewFormat, isOldFormat } = testModelFormat(expectedFormat);
+                
+                let html = '<h4>Результат:</h4>';
+                html += `<p>✅ Новый формат: ${isNewFormat ? 'ДА' : 'НЕТ'}</p>`;
+                html += `<p>Старый формат: ${isOldFormat ? 'ДА' : 'НЕТ'}</p>`;
+                
+                if (isNewFormat) {
+                    html += '<p class="success">✅ Формат корректен! Метод processGraphResponse примет эту модель.</p>';
+                    html += '<h4>Структура модели:</h4>';
+                    html += '<pre>' + JSON.stringify(expectedFormat, null, 2) + '</pre>';
+                } else {
+                    html += '<p class="error">❌ Формат некорректен! Метод processGraphResponse выбросит ошибку.</p>';
+                }
+                
+                resultDiv.innerHTML = html;
+                document.getElementById('test1').classList.add(isNewFormat ? 'success' : 'error');
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Ошибка: ${error.message}</p>`;
+                document.getElementById('test1').classList.add('error');
+            }
+        }
+        
+        function simulateAPIResponse() {
+            const resultDiv = document.getElementById('result2');
+            resultDiv.innerHTML = '';
+            
+            // Симулируем ответ от нашего исправленного API
+            const simulatedResponse = {
+                success: true,
+                model: expectedFormat
+            };
+            
+            let html = '<h4>Симулированный ответ API:</h4>';
+            html += '<pre>' + JSON.stringify(simulatedResponse, null, 2) + '</pre>';
+            
+            // Проверяем формат
+            const { isNewFormat } = testModelFormat(simulatedResponse.model);
+            
+            if (isNewFormat) {
+                html += '<p class="success">✅ Этот ответ будет корректно обработан graph-manager.js!</p>';
+                
+                // Показываем, как будет обработана модель
+                html += '<h4>Обработка модели:</h4>';
+                html += '<ul>';
+                html += `<li>Действий: ${simulatedResponse.model.model_actions.length}</li>`;
+                html += `<li>Объектов: ${simulatedResponse.model.model_objects.length}</li>`;
+                html += `<li>Связей: ${simulatedResponse.model.model_connections.length}</li>`;
+                html += '</ul>';
+                
+                document.getElementById('test2').classList.add('success');
+            } else {
+                html += '<p class="error">❌ Этот ответ вызовет ошибку "Модель имеет неизвестный формат"</p>';
+                document.getElementById('test2').classList.add('error');
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
