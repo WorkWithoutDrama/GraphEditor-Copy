@@ -96,8 +96,8 @@ sleep 2
 
 # Запускаем API
 echo "🔧 Запуск AI API..."
-echo "   Использую api_simple_with_logging.py с выводом JSON в логи"
-python3 api_simple_with_logging.py &
+echo "   Использую api_simple_with_cors.py с CORS поддержкой и выводом JSON"
+python3 api_simple_with_cors.py &
 API_PID=$!
 sleep 5  # Даем больше времени на запуск
 
@@ -124,7 +124,7 @@ if [ -z "$API_PORT" ]; then
         echo "   ❌ API не запустился"
         echo "   Пробую альтернативный способ..."
         echo "   Откройте новый терминал и запустите:"
-        echo "   cd '$PWD' && python3 api_simple_with_logging.py"
+        echo "   cd '$PWD' && python3 api_simple_with_cors.py"
         echo "   Затем в этом окне нажмите Enter..."
         read
     fi
