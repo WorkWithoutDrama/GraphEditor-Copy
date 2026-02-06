@@ -1,0 +1,13 @@
+{
+  "name": "graph-editor-proxy",
+  "version": "1.0.0",
+  "description": "Прокси-сервер для Graph Editor",
+  "main": "simple-proxy.js",
+  "scripts": {
+    "start": "node simple-proxy.js",
+    "dev": "node simple-proxy.js"
+  },
+  "dependencies": {
+    "http-proxy": "^1.18.1"
+  }
+}
