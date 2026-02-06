@@ -142,17 +142,17 @@ let objectCounter = 1;
 let stateCounter = 1;
 
 // Функция для генерации ID действий
-generateActionId() {
+function generateActionId() {
     return `a${actionCounter.toString().padStart(5, '0')}`;
 }
 
 // Функция для генерации ID объектов
-generateObjectId() {
+function generateObjectId() {
     return `o${objectCounter.toString().padStart(5, '0')}`;
 }
 
 // Функция для генерации ID состояний
-generateStateId() {
+function generateStateId() {
     return `s${stateCounter.toString().padStart(5, '0')}`;
 }
 
