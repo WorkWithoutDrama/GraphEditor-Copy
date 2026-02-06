@@ -18,7 +18,7 @@ class GraphManager {
         this.conversationHistory = [];
         this.isResizing = false;
         this.apiAvailable = false;
-        this.apiBaseUrl = 'http://localhost:5001'; // Прямое подключение к API
+        this.apiBaseUrl = 'http://localhost:3000'; // Подключение через прокси
         this.llmProvider = 'ollama';
 
         // Настройка методов с правильным контекстом
@@ -112,61 +112,63 @@ class GraphManager {
 
     async checkAPIStatus() {
         try {
-            // Пробуем разные порты API напрямую
-            const portsToTry = [5001, 5002, 5003, 5004, 5005, 3000];
-
-            let apiUrl = null;
-            for (const port of portsToTry) {
-                const testUrl = `http://localhost:${port}/api/health`;
-                console.log(`🔍 Проверяю: ${testUrl}`);
-
-                try {
-                    const response = await fetch(testUrl, {
-                        method: 'GET',
-                        mode: 'cors',
-                        cache: 'no-cache',
-                        signal: AbortSignal.timeout(2000)
-                    });
-
-                    if (response.ok) {
-                        apiUrl = testUrl;
-                        console.log(`✅ Найден работающий API: ${testUrl}`);
-                        break;
-                    }
-                } catch (e) {
-                    // Порт не отвечает, пробуем следующий
-                    console.log(`   ❌ ${testUrl} не отвечает`);
-                }
-            }
-
-            if (!apiUrl) {
-                throw new Error('Не найден работающий API сервер');
-            }
-
-            const proxyUrl = apiUrl;
-            
+            // ВСЕГДА проверяем прокси порт 3000, а не API напрямую
+            const proxyUrl = 'http://localhost:3000/api/health';
             console.log(`🔍 Проверяю прокси: ${proxyUrl}`);
-            
+
+            // Сначала проверяем прокси
             const response = await fetch(proxyUrl, {
                 method: 'GET',
                 mode: 'cors',
                 cache: 'no-cache',
                 signal: AbortSignal.timeout(5000)
             });
-            
+
             if (response.ok) {
                 this.apiAvailable = true;
-                // ОБНОВЛЯЕМ apiBaseUrl на найденный порт
-                const url = new URL(apiUrl);
-                this.apiBaseUrl = `http://localhost:${url.port}`;
-                console.log(`✅ Прокси и API доступны! Использую порт: ${url.port}`);
-                
+                // Используем прокси как apiBaseUrl
+                this.apiBaseUrl = 'http://localhost:3000';
+                console.log(`✅ Прокси доступен! Использую порт: 3000`);
+
+                // Проверяем, что API за прокси тоже работает
+                console.log(`🔍 Проверяю API через прокси: ${this.apiBaseUrl}/api/health`);
+
                 // Показываем приветственное сообщение
                 this.showWelcomeMessage();
-                
+
                 return true;
             } else {
-                throw new Error(`Прокси отвечает с ошибкой: ${response.status}`);
+                // Если прокси не отвечает, пробуем API напрямую (для отладки)
+                console.log('⚠️  Прокси не отвечает, пробую найти API напрямую...');
+
+                const portsToTry = [5001, 5002, 5003, 5004, 5005];
+                for (const port of portsToTry) {
+                    const testUrl = `http://localhost:${port}/api/health`;
+                    console.log(`🔍 Проверяю API напрямую: ${testUrl}`);
+
+                    try {
+                        const directResponse = await fetch(testUrl, {
+                            method: 'GET',
+                            mode: 'cors',
+                            cache: 'no-cache',
+                            signal: AbortSignal.timeout(2000)
+                        });
+
+                        if (directResponse.ok) {
+                            this.apiAvailable = true;
+                            this.apiBaseUrl = `http://localhost:${port}`;
+                            console.log(`✅ Найден API напрямую: ${testUrl}`);
+                            console.log(`⚠️  Прокси недоступен, использую прямой API`);
+                            this.showWelcomeMessage();
+                            return true;
+                        }
+                    } catch (e) {
+                        // Порт не отвечает, пробуем следующий
+                        console.log(`   ❌ ${testUrl} не отвечает`);
+                    }
+                }
+
+                throw new Error('Не найден ни прокси, ни работающий API сервер');
             }
             
         } catch (error) {
