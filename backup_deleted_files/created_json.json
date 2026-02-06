@@ -1,0 +1,49 @@
+{
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_name": "Регистрация по email",
+      "action_links": {
+        "manual": "",
+        "API": "",
+        "UI": ""
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_name": "Авторизация и восстановление пароля",
+      "action_links": {
+        "manual": "",
+        "API": "",
+        "UI": ""
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o12345",
+      "object_name": "Пользователь",
+      "resource_state": [
+        {
+          "state_id": "s00000",
+          "state_name": "null"
+        },
+        {
+          "state_id": "s12345",
+          "state_name": "зарегистрирован"
+        }
+      ],
+      "object_links": {
+        "manual": "",
+        "API": "",
+        "UI": ""
+      }
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_out": "a00001",
+      "connection_in": "o12345s12345"
+    }
+  ]
+}

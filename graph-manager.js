@@ -11,14 +11,16 @@ class GraphManager {
         this.fileUpload = document.getElementById('fileUpload');
         this.resizer = document.getElementById('resizer');
         this.clearChatBtn = document.getElementById('clearChatBtn');
-        
+        this.llmProviderBtn = document.getElementById('llmProviderBtn');
+
         // Инициализация состояния
         this.isChatVisible = false;
         this.conversationHistory = [];
         this.isResizing = false;
         this.apiAvailable = false;
-        this.apiBaseUrl = 'http://localhost:3000';
-        
+        this.apiBaseUrl = 'http://localhost:5001'; // Прямое подключение к API
+        this.llmProvider = 'ollama';
+
         // Настройка методов с правильным контекстом
         this.handleFileUpload = this.handleFileUpload.bind(this);
         this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -28,7 +30,7 @@ class GraphManager {
         this.initializeEventListeners();
         this.initializeResizer();
         
-        // Проверка API - БЕЗ демо-режима
+        // Проверка API
         this.checkAPIStatus();
     }
 
@@ -53,7 +55,11 @@ class GraphManager {
         if (this.clearChatBtn) {
             this.clearChatBtn.addEventListener('click', () => this.clearChat());
         }
-        
+
+        if (this.llmProviderBtn) {
+            this.llmProviderBtn.addEventListener('click', () => this.toggleLLMProvider());
+        }
+
         // Обработка файла
         if (this.fileUpload) {
             this.fileUpload.addEventListener('change', (e) => {
@@ -106,8 +112,38 @@ class GraphManager {
 
     async checkAPIStatus() {
         try {
-            // Только прокси режим! Не работаем с file:// напрямую
-            const proxyUrl = 'http://localhost:3000/api/health';
+            // Пробуем разные порты API напрямую
+            const portsToTry = [5001, 5002, 5003, 5004, 5005, 3000];
+
+            let apiUrl = null;
+            for (const port of portsToTry) {
+                const testUrl = `http://localhost:${port}/api/health`;
+                console.log(`🔍 Проверяю: ${testUrl}`);
+
+                try {
+                    const response = await fetch(testUrl, {
+                        method: 'GET',
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        signal: AbortSignal.timeout(2000)
+                    });
+
+                    if (response.ok) {
+                        apiUrl = testUrl;
+                        console.log(`✅ Найден работающий API: ${testUrl}`);
+                        break;
+                    }
+                } catch (e) {
+                    // Порт не отвечает, пробуем следующий
+                    console.log(`   ❌ ${testUrl} не отвечает`);
+                }
+            }
+
+            if (!apiUrl) {
+                throw new Error('Не найден работающий API сервер');
+            }
+
+            const proxyUrl = apiUrl;
             
             console.log(`🔍 Проверяю прокси: ${proxyUrl}`);
             
@@ -147,29 +183,7 @@ class GraphManager {
         // Очищаем чат и показываем инструкцию
         this.chatMessages.innerHTML = '';
         
-        const errorMessage = `❌ Graph Manager не может подключиться к AI API
-
-📋 **Требуется запуск серверов:**
-
-1. **Запустите AI API сервер**
-   \`\`\`bash
-   python api.py
-   \`\`\`
-
-2. **Запустите прокси сервер**
-   \`\`\`bash
-   node proxy-server.js
-   \`\`\`
-
-3. **Обновите страницу** после запуска серверов
-
-🔗 **Или используйте скрипт запуска:**
-   \`\`\`bash
-   ./start-full.sh  # macOS/Linux
-   start-full.bat   # Windows
-   \`\`\`
-
-📁 **Файлы находятся в:** ${window.location.pathname}`;
+        const errorMessage = "❌ Graph Manager не может подключиться к AI API\n\n📋 **Требуется запуск серверов:**\n\n1. **Запустите AI API сервер**\n   ```bash\n   python api.py\n   ```\n\n2. **Запустите прокси сервер**\n   ```bash\n   node proxy-server.js\n   ```\n\n3. **Обновите страницу** после запуска серверов\n\n🔗 **Или используйте скрипт запуска:**\n   ```bash\n   ./start-full.sh  # macOS/Linux\n   start-full.bat   # Windows\n   ```\n\n📁 **Файлы находятся в:** " + window.location.pathname;
         
         this.addMessage(errorMessage, 'bot');
         
@@ -192,14 +206,7 @@ class GraphManager {
     showWelcomeMessage() {
         if (!this.chatMessages) return;
         
-        const welcomeMessage = `👋 Graph Manager готов к работе!
-
-📝 **Отправьте мне:**
-• Техническое задание
-• Описание системы  
-• Текстовый файл (.txt, .md, .pdf)
-
-💡 **Совет:** Чем детальнее описание, тем точнее будет модель!`;
+        const welcomeMessage = "👋 Graph Manager готов к работе!\n\n📝 **Отправьте мне:**\n• Техническое задание\n• Описание системы  \n• Текстовый файл (.txt, .md, .pdf)\n\n💡 **Совет:** Чем детальнее описание, тем точнее будет модель!";
         
         this.addMessage(welcomeMessage, 'bot');
     }
@@ -327,8 +334,27 @@ class GraphManager {
             }
             
         } catch (error) {
-            this.addMessage(`❌ Ошибка при обработке файла: ${error.message}`, 'bot');
+            let errorMessage = error.message;
+
+            // Улучшенные сообщения об ошибках
+            if (errorMessage.includes('JSON')) {
+                errorMessage = 'Ошибка формата данных от сервера. Попробуйте еще раз.';
+            } else if (errorMessage.includes('Network') || errorMessage.includes('fetch')) {
+                errorMessage = 'Проблема с сетью или сервер недоступен.';
+            } else if (errorMessage.includes('API недоступен')) {
+                errorMessage = 'API сервер недоступен. Убедитесь, что сервер запущен.';
+            }
+
+            this.addMessage(`❌ ${errorMessage}`, 'bot');
             console.error('File upload error:', error);
+            
+            // Показываем подробную ошибку
+            this.showMessage(`Подробности ошибки: ${error.message}`, 'error');
+            
+            // Очищаем граф
+            if (window.renderGraph) {
+                window.renderGraph({ nodes: [], edges: [] });
+            }
         }
     }
 
@@ -348,7 +374,7 @@ class GraphManager {
         
         try {
             const apiUrl = `${this.apiBaseUrl}/api/generate-model`;
-            console.log(`📤 Отправляю запрос к API: ${apiUrl}`);
+            console.log(`📤 Отправляю запрос к API: ${apiUrl} (Провайдер: ${this.llmProvider})`);
             
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -361,44 +387,237 @@ class GraphManager {
                 throw new Error(`HTTP error: ${response.status}`);
             }
             
-            const result = await response.json();
-            console.log('✅ Ответ от API получен');
-            return result;
+            return await response.json();
             
         } catch (error) {
             console.error('❌ Ошибка API:', error);
-            throw error; // Пробрасываем ошибку дальше - НЕТ демо-режима
+            throw error;
+        }
+    }
+
+    showMessage(message, type = 'info') {
+        if (!this.chatMessages) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message bot-message ${type}-message`;
+        
+        let icon = '💡';
+        if (type === 'error') icon = '❌';
+        if (type === 'warning') icon = '⚠️';
+        if (type === 'success') icon = '✅';
+        
+        messageDiv.textContent = `${icon} ${message}`;
+        this.chatMessages.appendChild(messageDiv);
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        
+        if (type === 'error') {
+            messageDiv.style.backgroundColor = '#f8d7da';
+            messageDiv.style.borderLeft = '4px solid #dc3545';
+            messageDiv.style.padding = '12px';
+            messageDiv.style.margin = '10px 0';
+        } else if (type === 'warning') {
+            messageDiv.style.backgroundColor = '#fff3cd';
+            messageDiv.style.borderLeft = '4px solid #ffc107';
+            messageDiv.style.padding = '12px';
+            messageDiv.style.margin = '10px 0';
         }
     }
 
     processGraphResponse(response) {
-        if (response.success && response.model && window.renderGraph) {
+        try {
+            if (!response || typeof response !== 'object') {
+                throw new Error('Некорректный ответ от сервера');
+            }
+
+            // Проверяем, не вернул ли API ошибку напрямую
+            if (response.error) {
+                throw new Error(response.error);
+            }
+
+            if (!response.success) {
+                throw new Error(response.error || 'Ошибка генерации модели');
+            }
+
+            if (!response.model || typeof response.model !== 'object') {
+                throw new Error('Модель не сгенерирована или имеет некорректный формат');
+            }
+
+            if (!window.renderGraph) {
+                console.warn('renderGraph не доступен');
+                this.showMessage('Ошибка рендеринга графа: renderGraph не доступен', 'error');
+                return;
+            }
+
             const nodes = [];
             const edges = [];
             const ids = new Set();
             
-            const addNode = (id, type) => {
+            const addNode = (id, label, type) => {
                 if (!ids.has(id)) {
-                    nodes.push({ data: { id, label: id, type } });
+                    nodes.push({ data: { id, label: label || id, type } });
                     ids.add(id);
                 }
             };
-            
-            for (const [action, data] of Object.entries(response.model)) {
-                addNode(action, 'action');
-                
-                (data.init_states || []).forEach(state => {
-                    addNode(state, 'state');
-                    edges.push({ data: { id: `${state}->${action}`, source: state, target: action } });
-                });
-                
-                (data.final_states || []).forEach(state => {
-                    addNode(state, 'state');
-                    edges.push({ data: { id: `${action}->${state}`, source: action, target: state } });
-                });
+
+            // Получаем модель
+            const model = response.model;
+
+            // Определяем формат модели
+            const isNewFormat = model.model_actions && model.model_objects && model.model_connections;
+            const isOldFormat = Object.keys(model).some(key =>
+                model[key] &&
+                typeof model[key] === 'object' &&
+                ('init_states' in model[key] || 'final_states' in model[key])
+            );
+
+            if (!isNewFormat && !isOldFormat) {
+                throw new Error('Модель имеет неизвестный формат');
             }
-            
+
+            if (isOldFormat) {
+                console.warn('⚠️  Получена модель в СТАРОМ формате. Преобразую в новый...');
+                console.log('Старая структура:', JSON.stringify(model, null, 2));
+
+                // TODO: Преобразовать старую структуру в новую
+                // Пока что просто используем fallback
+                throw new Error('API вернул старую структуру. Нужно исправить API!');
+            }
+
+            console.log('📋 Обрабатываю модель в НОВОМ формате:');
+            console.log('- Действия:', model.model_actions.length);
+            console.log('- Объекты:', model.model_objects.length);
+            console.log('- Связи:', model.model_connections.length);
+
+            // 1. Добавляем действия как узлы типа 'action'
+            model.model_actions.forEach(action => {
+                if (action && action.action_id && action.action_name) {
+                    addNode(action.action_id, action.action_name, 'action');
+                    console.log(`➕ Добавлен узел действия: ${action.action_id} (${action.action_name})`);
+                }
+            });
+
+            // 2. Добавляем объекты и их состояния
+            // Согласно требованиям: "объект + состояние в овале"
+            // Создаем отдельные узлы для каждого состояния объекта
+            model.model_objects.forEach(obj => {
+                if (obj && obj.object_id && obj.object_name) {
+                    console.log(`📋 Обрабатываю объект: ${obj.object_name} (${obj.object_id})`);
+
+                    // Проверяем resource_state как массив состояний
+                    if (obj.resource_state && Array.isArray(obj.resource_state)) {
+                        // Обрабатываем каждое состояние в массиве
+                        obj.resource_state.forEach(state => {
+                            if (state && state.state_id && state.state_name && state.state_name !== 'null') {
+                                // Создаем составной ID для состояния: object_id + state_id
+                                const stateId = `${obj.object_id}${state.state_id}`;
+                                const stateLabel = `${obj.object_name}: ${state.state_name}`;
+
+                                // Создаем узел "объект+состояние" как овал
+                                addNode(stateId, stateLabel, 'state');
+                                console.log(`   ➕ Добавлен узел объект+состояние: ${stateId} (${stateLabel})`);
+                            }
+                        });
+                    }
+                }
+            });
+
+            // 3. Добавляем связи как edges с проверкой существования узлов
+            model.model_connections.forEach(connection => {
+                if (connection && connection.connection_out && connection.connection_in) {
+                    const sourceId = connection.connection_out;
+                    const targetId = connection.connection_in;
+
+                    // Проверяем, существуют ли оба узла
+                    const sourceExists = ids.has(sourceId);
+                    const targetExists = ids.has(targetId);
+
+                    if (sourceExists && targetExists) {
+                        edges.push({
+                            data: {
+                                id: `${sourceId}->${targetId}`,
+                                source: sourceId,
+                                target: targetId,
+                                label: 'связь'
+                            }
+                        });
+                        console.log(`✅ Добавлена связь: ${sourceId} -> ${targetId}`);
+                    } else {
+                        console.warn(`⚠️  Пропущена связь: ${sourceId} -> ${targetId} (несуществующий узел)`);
+                        console.warn(`   source существует: ${sourceExists}, target существует: ${targetExists}`);
+
+                        // Если один из узлов не существует, попробуем создать его
+                        if (!sourceExists && sourceId.startsWith('o') && sourceId.includes('s')) {
+                            // Это составной ID состояния - создаем узел состояния
+                            // Ищем позицию 's' в ID (формат: o12345s12345)
+                            const sIndex = sourceId.indexOf('s');
+                            if (sIndex !== -1) {
+                                const objectId = sourceId.substring(0, sIndex); // Извлекаем 'o12345'
+                                const stateId = sourceId.substring(sIndex);     // Извлекаем 's12345'
+
+                                // Ищем объект в модели
+                                const obj = model.model_objects.find(o => o.object_id === objectId);
+                                if (obj) {
+                                    const stateLabel = `${obj.object_name}: состояние ${stateId.substring(1)}`;
+                                    addNode(sourceId, stateLabel, 'state');
+                                    console.log(`➕ Создан отсутствующий узел: ${sourceId}`);
+                                }
+                            }
+                        }
+
+                        if (!targetExists && targetId.startsWith('o') && targetId.includes('s')) {
+                            // Это составной ID состояния - создаем узел состояния
+                            // Ищем позицию 's' в ID (формат: o12345s12345)
+                            const sIndex = targetId.indexOf('s');
+                            if (sIndex !== -1) {
+                                const objectId = targetId.substring(0, sIndex); // Извлекаем 'o12345'
+                                const stateId = targetId.substring(sIndex);     // Извлекаем 's12345'
+
+                                const obj = model.model_objects.find(o => o.object_id === objectId);
+                                if (obj) {
+                                    const stateLabel = `${obj.object_name}: состояние ${stateId.substring(1)}`;
+                                    addNode(targetId, stateLabel, 'state');
+                                    console.log(`➕ Создан отсутствующий узел: ${targetId}`);
+                                }
+                            }
+                        }
+
+                        // Повторная проверка после возможного создания узлов
+                        if (ids.has(sourceId) && ids.has(targetId)) {
+                            edges.push({
+                                data: {
+                                    id: `${sourceId}->${targetId}`,
+                                    source: sourceId,
+                                    target: targetId,
+                                    label: 'связь'
+                                }
+                            });
+                            console.log(`✅ Добавлена связь после создания узлов: ${sourceId} -> ${targetId}`);
+                        }
+                    }
+                }
+            });
+
+            if (nodes.length === 0) {
+                throw new Error('Модель не содержит узлов');
+            }
+
             window.renderGraph({ nodes, edges });
+            this.showMessage(`✅ Успешно создана модель с ${nodes.length} узлами и ${edges.length} связями`, 'success');
+            console.log('🎯 Модель обработана:');
+            console.log(`   Узлы: ${nodes.length}`);
+            console.log(`   Связи: ${edges.length}`);
+
+        } catch (error) {
+            console.error('❌ Ошибка обработки ответа:', error);
+            this.showMessage(`Ошибка обработки модели: ${error.message}`, 'error');
+            
+            // Не показываем демо-граф, а показываем ошибку
+            this.showMessage('Модель не загружена. Пожалуйста, проверьте:\n1. Корректность запроса к LLM\n2. Что LLM возвращает правильный формат модели\n3. Что API сервер работает корректно', 'warning');
+            
+            // Очищаем граф
+            if (window.renderGraph) {
+                window.renderGraph({ nodes: [], edges: [] });
+            }
         }
     }
 
@@ -454,6 +673,25 @@ class GraphManager {
             } else {
                 this.showConnectionError();
             }
+        }
+    }
+
+    toggleLLMProvider() {
+        // Переключаем между Ollama и DeepSeek
+        if (this.llmProvider === 'ollama') {
+            this.llmProvider = 'deepseek';
+            if (this.llmProviderBtn) {
+                this.llmProviderBtn.textContent = '🤖 DeepSeek';
+                this.llmProviderBtn.title = 'Текущий провайдер: DeepSeek. Нажмите для переключения на Ollama';
+            }
+            this.addMessage('Провайдер LLM изменен на DeepSeek', 'bot');
+        } else {
+            this.llmProvider = 'ollama';
+            if (this.llmProviderBtn) {
+                this.llmProviderBtn.textContent = '🤖 Ollama';
+                this.llmProviderBtn.title = 'Текущий провайдер: Ollama. Нажмите для переключения на DeepSeek';
+            }
+            this.addMessage('Провайдер LLM изменен на Ollama', 'bot');
         }
     }
 }

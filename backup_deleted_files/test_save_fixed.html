@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест исправленного сохранения</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px; margin: 5px; }
+        #cy { width: 100%; height: 500px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Тест исправленного сохранения JSON</h1>
+    
+    <div>
+        <button id="loadJson">Загрузить тестовый JSON</button>
+        <button id="saveJson">Сохранить JSON</button>
+    </div>
+    
+    <div id="cy"></div>
+    
+    <div id="output"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
+    <script src="script_fixed_save.js"></script>
+    <script>
+        let cy;
+        
+        // Инициализация графа
+        document.addEventListener('DOMContentLoaded', function() {
+            cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: [],
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'text-halign': 'center'
+                        }
+                    },
+                    {
+                        selector: 'node[type="action"]',
+                        style: {
+                            'shape': 'rectangle',
+                            'background-color': '#e6f7ff'
+                        }
+                    },
+                    {
+                        selector: 'node[type="object"]',
+                        style: {
+                            'shape': 'ellipse', 
+                            'background-color': '#f6ffed'
+                        }
+                    },
+                    {
+                        selector: 'node[type="state"]',
+                        style: {
+                            'shape': 'ellipse',
+                            'background-color': '#fff0f6'
+                        }
+                    }
+                ]
+            });
+            
+            // Загрузка тестового JSON
+            document.getElementById('loadJson').addEventListener('click', function() {
+                const testJson = {
+                    model_actions: [
+                        {
+                            action_id: "a00001",
+                            action_name: "Регистрация по email",
+                            action_links: {"manual": "", "API": "", "UI": ""}
+                        },
+                        {
+                            action_id: "a00002", 
+                            action_name: "Авторизация и восстановление пароля",
+                            action_links: {"manual": "", "API": "", "UI": ""}
+                        }
+                    ],
+                    model_objects: [
+                        {
+                            object_id: "o12345",
+                            object_name: "Пользователь",
+                            resource_state: [
+                                {"state_id": "s00000", "state_name": "null"},
+                                {"state_id": "s12345", "state_name": "зарегистрирован"}
+                            ],
+                            object_links: {"manual": "", "API": "", "UI": ""}
+                        }
+                    ],
+                    model_connections: [
+                        {
+                            connection_out: "a00001",
+                            connection_in: "o12345s12345"
+                        }
+                    ]
+                };
+                
+                // Очищаем граф
+                cy.elements().remove();
+                
+                // Добавляем действия
+                testJson.model_actions.forEach(action => {
+                    cy.add({
+                        group: 'nodes',
+                        data: {
+                            id: action.action_id,
+                            label: action.action_name,
+                            type: 'action'
+                        },
+                        position: { x: Math.random() * 300, y: Math.random() * 300 }
+                    });
+                });
+                
+                // Добавляем объекты и состояния
+                testJson.model_objects.forEach(obj => {
+                    // Добавляем объект
+                    cy.add({
+                        group: 'nodes',
+                        data: {
+                            id: obj.object_id,
+                            label: obj.object_name,
+                            type: 'object'
+                        },
+                        position: { x: Math.random() * 300 + 300, y: Math.random() * 300 }
+                    });
+                    
+                    // Добавляем состояния
+                    obj.resource_state.forEach(state => {
+                        if (state.state_name !== 'null') {
+                            cy.add({
+                                group: 'nodes',
+                                data: {
+                                    id: state.state_id,
+                                    label: state.state_name,
+                                    type: 'state'
+                                },
+                                position: { x: Math.random() * 300 + 600, y: Math.random() * 300 }
+                            });
+                            
+                            // Связь объект-состояние
+                            cy.add({
+                                group: 'edges',
+                                data: {
+                                    id: `${obj.object_id}-${state.state_id}`,
+                                    source: obj.object_id,
+                                    target: state.state_id,
+                                    type: 'has_state'
+                                }
+                            });
+                        }
+                    });
+                });
+                
+                // Добавляем связи
+                testJson.model_connections.forEach(conn => {
+                    // Разбираем составной ID для состояний
+                    let sourceId = conn.connection_out;
+                    let targetId = conn.connection_in;
+                    
+                    // Если targetId составной (например, "o12345s12345")
+                    if (targetId.includes('s') && !targetId.startsWith('s')) {
+                        const parts = targetId.split('s');
+                        if (parts.length === 2) {
+                            targetId = 's' + parts[1]; // Берем только state_id часть
+                        }
+                    }
+                    
+                    if (cy.getElementById(sourceId).length > 0 && cy.getElementById(targetId).length > 0) {
+                        cy.add({
+                            group: 'edges',
+                            data: {
+                                id: `${sourceId}-${targetId}`,
+                                source: sourceId,
+                                target: targetId
+                            }
+                        });
+                    }
+                });
+                
+                document.getElementById('output').innerHTML = '<h3>✅ JSON загружен в граф</h3>';
+            });
+            
+            // Кнопка сохранения уже установлена в script_fixed_save.js
+        });
+    </script>
+</body>
+</html>

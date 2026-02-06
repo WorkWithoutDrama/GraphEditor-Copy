@@ -18,32 +18,66 @@ function renderGraph(elements) {
                     'label': 'data(label)',
                     'text-valign': 'center',
                     'text-halign': 'center',
-                    'width': '80px',
-                    'height': '40px',
-                    'padding': '15px',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '180px',
+                    'font-size': '14px',
+                    'font-family': 'Arial, sans-serif',
+                    'line-height': 1.4,
+                    'padding': '12px',
                     'border-width': 2,
                     'border-color': '#007bff',
-                    'background-color': '#fff'
+                    'background-color': '#fff',
+                    'color': '#333'
                 } },
                 { selector: 'node[type="action"]', style: {
                     'shape': 'rectangle',
                     'background-color': '#e6f7ff',
-                    'width': '100px',
-                    'height': '50px'
+                    'border-color': '#1890ff',
+                    'width': '180px',
+                    'height': '60px',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '200px',
+                    'padding': '10px',
+                    'min-width': '80px',
+                    'min-height': '40px',
+                    'font-size': '13px',
+                    'font-weight': '500'
                 } },
                 { selector: 'node[type="state"]', style: {
                     'shape': 'ellipse',
                     'background-color': '#f6ffed',
                     'border-color': '#52c41a',
-                    'width': '80px',
-                    'height': '80px'
+                    'width': '160px',
+                    'height': '70px',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '160px',
+                    'padding': '12px',
+                    'min-width': '70px',
+                    'min-height': '70px',
+                    'font-size': '13px'
+                } },
+                { selector: 'node[type="object"]', style: {
+                    'shape': 'round-hexagon',
+                    'background-color': '#fff0f6',
+                    'border-color': '#eb2f96',
+                    'width': '180px',
+                    'height': '80px',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '180px',
+                    'padding': '12px',
+                    'min-width': '80px',
+                    'min-height': '60px',
+                    'font-size': '13px',
+                    'font-weight': '500'
                 } },
                 { selector: 'edge', style: {
-                    'width': 2,
-                    'line-color': '#ccc',
+                    'width': 3,
+                    'line-color': '#666',
                     'target-arrow-shape': 'triangle',
-                    'target-arrow-color': '#ccc',
-                    'curve-style': 'bezier'
+                    'target-arrow-color': '#666',
+                    'target-arrow-fill': 'filled',
+                    'curve-style': 'bezier',
+                    'arrow-scale': 1.5
                 } },
                 { selector: ':selected', style: {
                     'border-width': 4,
@@ -115,18 +149,142 @@ document.getElementById('addStateButton').addEventListener('click', () => {
 
 document.getElementById('saveButton').addEventListener('click', () => {
     let name = prompt("Имя проекта:", "model") || "project";
-    const output = {};
-    cy.nodes('[type="action"]').forEach(node => {
-        output[node.data('label')] = {
-            init_states: node.incomers('edge').sources().map(n => n.data('label')),
-            final_states: node.outgoers('edge').targets().map(n => n.data('label'))
-        };
+
+    const output = {
+        model_actions: [],
+        model_objects: [],
+        model_connections: []
+    };
+
+    // 1. Сохраняем действия - используем реальные ID узлов
+    const actionNodes = cy.nodes('[type="action"]');
+
+    actionNodes.forEach(node => {
+        // Используем реальный ID узла из графа
+        const nodeId = node.id();
+
+        output.model_actions.push({
+            action_id: nodeId,  // ← ВАЖНО: используем реальный ID
+            action_name: node.data('label') || `Действие ${nodeId}`,
+            action_links: {
+                manual: "",
+                API: "",
+                UI: ""
+            }
+        });
     });
-    const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+
+    // 2. Сохраняем объекты и их состояния
+    const objectNodes = cy.nodes('[type="object"]');
+    const stateNodes = cy.nodes('[type="state"]');
+
+    // Собираем все состояния
+    const stateMap = new Map();
+    stateNodes.forEach(stateNode => {
+        stateMap.set(stateNode.id(), {
+            id: stateNode.id(),
+            label: stateNode.data('label') || `Состояние ${stateNode.id()}`
+        });
+    });
+
+    // Сохраняем объекты
+    objectNodes.forEach(objectNode => {
+        const objectId = objectNode.id();  // ← Используем реальный ID
+        const resourceState = [];
+
+        // Ищем связанные состояния
+        const connectedEdges = objectNode.connectedEdges();
+        connectedEdges.forEach(edge => {
+            const sourceId = edge.source().id();
+            const targetId = edge.target().id();
+
+            // Если это связь объект-состояние
+            if (sourceId === objectId && stateMap.has(targetId)) {
+                const stateInfo = stateMap.get(targetId);
+                resourceState.push({
+                    state_id: stateInfo.id,
+                    state_name: stateInfo.label
+                });
+            } else if (targetId === objectId && stateMap.has(sourceId)) {
+                const stateInfo = stateMap.get(sourceId);
+                resourceState.push({
+                    state_id: stateInfo.id,
+                    state_name: stateInfo.label
+                });
+            }
+        });
+
+        // Если нет состояний, добавляем null
+        if (resourceState.length === 0) {
+            resourceState.push({
+                state_id: "s00000",
+                state_name: "null"
+            });
+        }
+
+        output.model_objects.push({
+            object_id: objectId,  // ← Используем реальный ID
+            object_name: objectNode.data('label') || `Объект ${objectId}`,
+            resource_state: resourceState,
+            object_links: {
+                manual: "",
+                API: "",
+                UI: ""
+            }
+        });
+    });
+
+    // 3. Сохраняем связи - используем реальные ID
+    const edges = cy.edges();
+
+    edges.forEach(edge => {
+        const sourceId = edge.source().id();  // ← Реальный ID источника
+        const targetId = edge.target().id();  // ← Реальный ID цели
+        const sourceType = edge.source().data('type');
+        const targetType = edge.target().data('type');
+
+        // Пропускаем связи объект-состояние (они уже в resource_state)
+        if ((sourceType === 'object' && targetType === 'state') ||
+            (sourceType === 'state' && targetType === 'object')) {
+            return;
+        }
+
+        // Для состояний создаем составные ID: object_id + state_id
+        let finalTargetId = targetId;
+        if (targetType === 'state') {
+            // Находим родительский объект
+            const parentEdges = edge.target().connectedEdges();
+            parentEdges.forEach(parentEdge => {
+                const parentSource = parentEdge.source();
+                const parentTarget = parentEdge.target();
+                if (parentSource.data('type') === 'object' && parentTarget.id() === targetId) {
+                    finalTargetId = parentSource.id() + targetId;
+                } else if (parentTarget.data('type') === 'object' && parentSource.id() === targetId) {
+                    finalTargetId = parentTarget.id() + targetId;
+                }
+            });
+        }
+
+        output.model_connections.push({
+            connection_out: sourceId,    // ← Реальный ID
+            connection_in: finalTargetId // ← Составной ID для состояний
+        });
+    });
+
+    // 4. Создаем и скачиваем файл
+    const jsonStr = JSON.stringify(output, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = `${name}.json`;
     a.click();
+    URL.revokeObjectURL(url);
+
+    console.log('💾 Сохранено:', output);
+    console.log(`✅ Действий: ${output.model_actions.length}`);
+    console.log(`✅ Объектов: ${output.model_objects.length}`);
+    console.log(`✅ Связей: ${output.model_connections.length}`);
 });
 
 document.getElementById('deleteSelectedButton').addEventListener('click', () => cy.elements(':selected').remove());
@@ -154,15 +312,154 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
     reader.onload = (e) => {
         const json = JSON.parse(e.target.result);
         const nodes = [], edges = [], ids = new Set();
-        const add = (id, type) => {
-            if (!ids.has(id)) { nodes.push({ data: { id, label: id, type } }); ids.add(id); }
+
+        const add = (id, label, type) => {
+            if (!ids.has(id)) {
+                nodes.push({ data: { id, label: label || id, type } });
+                ids.add(id);
+            }
         };
-        for (const act in json) {
-            add(act, 'action');
-            (json[act].init_states || []).forEach(s => { add(s, 'state'); edges.push({ data: { id: `${s}->${act}`, source: s, target: act } }); });
-            (json[act].final_states || []).forEach(s => { add(s, 'state'); edges.push({ data: { id: `${act}->${s}`, source: act, target: s } }); });
+
+        // Определяем формат: новый или старый
+        const isNewFormat = json.model_actions && json.model_objects && json.model_connections;
+        const isOldFormat = Object.keys(json).some(key =>
+            json[key] &&
+            typeof json[key] === 'object' &&
+            ('init_states' in json[key] || 'final_states' in json[key])
+        );
+
+        if (isNewFormat) {
+            // НОВЫЙ формат: {model_actions: [...], model_objects: [...], model_connections: [...]}
+            console.log('📂 Загружаю файл в НОВОМ формате');
+
+            // 1. Добавляем действия
+            json.model_actions.forEach(action => {
+                if (action.action_id && action.action_name) {
+                    add(action.action_id, action.action_name, 'action');
+                }
+            });
+
+            // 2. Добавляем объекты и состояния
+            json.model_objects.forEach(obj => {
+                if (obj.object_id && obj.object_name) {
+                    add(obj.object_id, obj.object_name, 'object');
+
+                    // Добавляем состояния
+                    if (obj.resource_state && Array.isArray(obj.resource_state)) {
+                        obj.resource_state.forEach(state => {
+                            if (state.state_id && state.state_name && state.state_name !== 'null') {
+                                const stateId = obj.object_id + state.state_id; // составной ID
+                                add(stateId, `${obj.object_name}: ${state.state_name}`, 'state');
+
+                                // Связь объект->состояние
+                                edges.push({
+                                    data: {
+                                        id: `${obj.object_id}->${stateId}`,
+                                        source: obj.object_id,
+                                        target: stateId,
+                                        type: 'has_state'
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+
+            // 3. Добавляем связи
+            json.model_connections.forEach(conn => {
+                if (conn.connection_out && conn.connection_in) {
+                    edges.push({
+                        data: {
+                            id: `${conn.connection_out}->${conn.connection_in}`,
+                            source: conn.connection_out,
+                            target: conn.connection_in
+                        }
+                    });
+                }
+            });
+
+        } else if (isOldFormat) {
+            // СТАРЫЙ формат: {"Действие": {"init_states": [], "final_states": []}}
+            console.log('📂 Загружаю файл в СТАРОМ формате (конвертирую в новый)');
+
+            let actionCounter = 1;
+            let objectCounter = 1;
+            let stateCounter = 1;
+            const objectMap = new Map();
+
+            for (const actionName in json) {
+                const actionData = json[actionName];
+                const actionId = `a${actionCounter.toString().padStart(5, '0')}`;
+                actionCounter++;
+
+                add(actionId, actionName, 'action');
+
+                // Обрабатываем final_states
+                if (actionData.final_states && Array.isArray(actionData.final_states)) {
+                    actionData.final_states.forEach(stateStr => {
+                        if (stateStr && typeof stateStr === 'string') {
+                            // Парсим "Объект: состояние"
+                            let objName, stateName;
+                            if (stateStr.includes(':')) {
+                                const parts = stateStr.split(':');
+                                objName = parts[0].trim();
+                                stateName = parts.slice(1).join(':').trim();
+                            } else {
+                                objName = stateStr;
+                                stateName = "состояние";
+                            }
+
+                            // Создаем объект если еще не существует
+                            if (!objectMap.has(objName)) {
+                                const objectId = `o${objectCounter.toString().padStart(5, '0')}`;
+                                objectCounter++;
+
+                                objectMap.set(objName, {
+                                    id: objectId,
+                                    states: []
+                                });
+
+                                add(objectId, objName, 'object');
+                            }
+
+                            const objInfo = objectMap.get(objName);
+                            const stateId = `s${stateCounter.toString().padStart(5, '0')}`;
+                            stateCounter++;
+
+                            const fullStateId = objInfo.id + stateId;
+                            add(fullStateId, `${objName}: ${stateName}`, 'state');
+
+                            // Связь объект->состояние
+                            edges.push({
+                                data: {
+                                    id: `${objInfo.id}->${fullStateId}`,
+                                    source: objInfo.id,
+                                    target: fullStateId,
+                                    type: 'has_state'
+                                }
+                            });
+
+                            // Связь действие->состояние
+                            edges.push({
+                                data: {
+                                    id: `${actionId}->${fullStateId}`,
+                                    source: actionId,
+                                    target: fullStateId
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        } else {
+            console.error('❌ Неизвестный формат файла');
+            alert('Неизвестный формат файла. Ожидается новая структура {model_actions, model_objects, model_connections} или старая {действие: {init_states, final_states}}');
+            return;
         }
+
         renderGraph({ nodes, edges });
+        console.log(`✅ Загружено: ${nodes.length} узлов, ${edges.length} связей`);
     };
     reader.readAsText(file);
 });

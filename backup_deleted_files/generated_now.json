@@ -1,0 +1,72 @@
+{
+  "model_actions": [
+    {
+      "action_id": "a00000",
+      "action_name": "",
+      "action_links": {
+        "manual": "",
+        "API": "",
+        "UI": ""
+      }
+    },
+    {
+      "action_id": "a12345",
+      "action_name": "Проверить email",
+      "action_links": {
+        "manual": "",
+        "API": "",
+        "UI": ""
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00000",
+      "object_name": "",
+      "resource_state": [
+        {
+          "state_id": "s00000",
+          "state_name": ""
+        },
+        {
+          "state_id": "s12345",
+          "state_name": ""
+        }
+      ],
+      "object_links": {
+        "manual": "",
+        "API": "",
+        "UI": ""
+      }
+    },
+    {
+      "object_id": "o12345",
+      "object_name": "Пользователь",
+      "resource_state": [
+        {
+          "state_id": "s00000",
+          "state_name": ""
+        },
+        {
+          "state_id": "s12345",
+          "state_name": "зарегистрирован"
+        }
+      ],
+      "object_links": {
+        "manual": "",
+        "API": "",
+        "UI": ""
+      }
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_out": "a00000",
+      "connection_in": "o12345s12345"
+    },
+    {
+      "connection_out": "a12345",
+      "connection_in": "o12345s12345"
+    }
+  ]
+}

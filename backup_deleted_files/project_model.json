@@ -1,0 +1,96 @@
+{
+  "project": {
+    "name": "Mindful Meals",
+    "description": "Клиент-серверное веб-приложение для персонализированного планирования здорового питания, отслеживания калорий и генерации списков покупок",
+    "type": "Single Page Application (SPA)",
+    "repository": "TestEditor",
+    "based_on_tech_spec": "exam.txt"
+  },
+  "architecture": {
+    "style": "Клиент-серверное",
+    "frontend_technology": "JavaScript/HTML/CSS",
+    "backend_technology": "Python Flask",
+    "database": "Не указана в текущей реализации",
+    "communication": "REST API"
+  },
+  "current_file_structure": {
+    "root_files": [
+      "exam.txt",
+      "api.py",
+      "graph-manager.js",
+      "script.js",
+      "simple-proxy.js",
+      "proxy-index.html",
+      "styles.css",
+      "requirements.txt",
+      "CHANGELOG.md",
+      "README-STRICT.md",
+      ".gitignore"
+    ],
+    "scripts": [
+      "cleanup.command",
+      "launch.command",
+      "CREATE_REPO_SCRIPT.sh"
+    ],
+    "git_directory": ".git",
+    "idea_directory": ".idea"
+  },
+  "functional_requirements": {
+    "frontend": {
+      "authentication": ["Регистрация по email/паролю", "Авторизация", "Восстановление пароля"],
+      "user_profile": ["Ввод личных данных", "Установка целей", "Выбор диетических предпочтений", "Расчет нормы калорий и БЖУ"],
+      "meal_planner": ["Недельный календарь", "Добавление/удаление/редактирование приемов пищи", "Поиск блюд/продуктов", "Отображение калорий и БЖУ", "Генерация плана питания"],
+      "recipe_database": ["Поиск по названию и ингредиентам", "Добавление собственных рецептов", "Просмотр детальной информации"],
+      "shopping_list": ["Автоматическая генерация списка покупок", "Ручное редактирование", "Категоризация продуктов"]
+    },
+    "backend": {
+      "api_endpoints": ["Управление пользователями", "Управление планами питания", "Работа с рецептами/продуктами"],
+      "database_entities": ["Пользователи", "Рецепты и продукты", "Планы питания", "Потребленные продукты"],
+      "business_logic": ["Расчет суточной нормы калорий", "Генерация плана питания", "Формирование списка покупок"]
+    }
+  },
+  "technological_stack": {
+    "proposed_in_spec": {
+      "frontend": ["React с TypeScript"],
+      "backend": ["Node.js с Express", "Python Django/Flask", "Go"],
+      "database": ["PostgreSQL", "MySQL", "MongoDB"],
+      "infrastructure": ["Git", "Docker", "Облачный хостинг (AWS/Google Cloud/Heroku)"]
+    },
+    "current_implementation": {
+      "frontend": ["JavaScript", "HTML5", "CSS3"],
+      "backend": ["Python 3", "Flask", "Flask-CORS"],
+      "dependencies": ["requests", "pydantic", "graphviz"],
+      "tools": ["Node.js"]
+    }
+  },
+  "performance_requirements": {
+    "api_response_time": "Не более 300 мс для основных запросов",
+    "scalability": "Поддержка не менее 1000 активных пользователей в пиковые часы",
+    "security": ["HTTPS", "Хэширование паролей (bcrypt)", "Защита от XSS и CSRF атак"]
+  },
+  "design_requirements": {
+    "ui_ux": ["Адаптивный дизайн", "Чистый и минималистичный интерфейс", "Удобство использования на мобильных и десктопных устройствах"],
+    "usability": ["Интуитивно понятный интерфейс", "Минимальное количество кликов для выполнения задач"]
+  },
+  "testing_and_acceptance": {
+    "testing_levels": ["Модульное тестирование", "Интеграционное тестирование", "Приемочное тестирование"],
+    "acceptance_criteria": ["Соответствие функционала требованиям ТЗ", "Стабильная работа всех компонентов", "Отсутствие критических ошибок"]
+  },
+  "current_ai_features": {
+    "graph_editor": "Интерактивный редактор графов",
+    "ai_assistant": "Преобразование текстовых описаний в графические модели",
+    "file_support": ["Импорт/экспорт JSON", "Текстовые файлы", "PDF файлы"],
+    "integration": "AI API на localhost:5001+ через прокси"
+  },
+  "development_status": {
+    "existing_features": ["Графический редактор с AI-ассистентом", "Веб-интерфейс для редактирования графов", "API для обработки AI-запросов", "Прокси-сервер для связи"],
+    "missing_from_spec": ["Система аутентификации пользователей", "База данных рецептов и продуктов", "Планировщик питания", "Генератор списка покупок", "Расчет калорий и БЖУ"],
+    "compatibility": "Текущая реализация является фреймворком для AI-ассистента по графам, а не полноценным приложением Mindful Meals"
+  },
+  "implementation_notes": [
+    "Текущий проект 'TestEditor' реализует AI-ассистент для работы с графами, а не приложение для планирования питания",
+    "Для реализации ТЗ из exam.txt потребуется существенная переработка архитектуры",
+    "Существующий код может быть использован как основа для AI-компонентов приложения Mindful Meals",
+    "Требуется разработка полного стека: база данных, бизнес-логика, интерфейс пользователя"
+  ]
+}
