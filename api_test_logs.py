@@ -63,61 +63,113 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                 print(f"📏 Длина: {len(text)} символов")
                 sys.stdout.flush()
                 
-                # Создаем тестовую модель
-                print("🔄 ГЕНЕРАЦИЯ МОДЕЛИ...")
+                # Создаем тестовую модель на основе анализа текста
+                print("🔄 АНАЛИЗИРУЮ ТЕКСТ И ГЕНЕРИРУЮ МОДЕЛЬ...")
                 sys.stdout.flush()
                 
-                timestamp = int(datetime.datetime.now().timestamp() * 1000)
-                model = {
-                    "model_actions": [
+                # Простой анализ текста для извлечения действий и объектов
+                actions = []
+                objects = []
+                connections = []
+                
+                # Извлекаем действия из текста (упрощенно)
+                action_keywords = ['Регистрация', 'Авторизация', 'Ввод', 'Установка', 'Выбор', 
+                                 'Расчет', 'Отображение', 'Добавление', 'Удаление', 'Редактирование',
+                                 'Поиск', 'Просмотр', 'Генерация', 'Разработка', 'Хранение']
+                
+                lines = text.split('\n')
+                action_counter = 1
+                object_counter = 1
+                state_counter = 1
+                
+                for line in lines:
+                    line_lower = line.lower()
+                    # Ищем действия
+                    for keyword in action_keywords:
+                        if keyword.lower() in line_lower:
+                            action_id = f"a{action_counter:05d}"
+                            action_name = f"{keyword} из ТЗ"
+                            actions.append({
+                                "action_id": action_id,
+                                "action_name": action_name,
+                                "action_links": {"manual": "", "API": "", "UI": ""}
+                            })
+                            action_counter += 1
+                            
+                    # Ищем объекты
+                    object_keywords = ['пользователь', 'профиль', 'система', 'база данных', 
+                                     'рецепт', 'продукт', 'план', 'список', 'календарь']
+                    for obj_keyword in object_keywords:
+                        if obj_keyword in line_lower:
+                            # Проверяем, есть ли уже такой объект
+                            existing_obj = next((o for o in objects if o["object_name"].lower() == obj_keyword), None)
+                            if not existing_obj:
+                                object_id = f"o{object_counter:05d}"
+                                objects.append({
+                                    "object_id": object_id,
+                                    "object_name": obj_keyword.capitalize(),
+                                    "resource_state": [
+                                        {
+                                            "state_id": "s00001",
+                                            "state_name": "неактивен"
+                                        },
+                                        {
+                                            "state_id": "s00002",
+                                            "state_name": "активен"
+                                        }
+                                    ]
+                                })
+                                object_counter += 1
+                
+                # Если не нашли действий и объектов, создаем тестовые
+                if not actions:
+                    actions = [{
+                        "action_id": "a00001",
+                        "action_name": "Регистрация пользователя",
+                        "action_links": {"manual": "", "API": "", "UI": ""}
+                    }]
+                
+                if not objects:
+                    objects = [
                         {
-                            "action_id": f"a{timestamp % 100000:05d}",
-                            "action_name": f"Тестовое действие из '{text[:20]}...'",
-                            "action_links": {"manual": "", "API": "", "UI": ""}
-                        }
-                    ],
-                    "model_objects": [
-                        {
-                            "object_id": f"o{(timestamp + 1) % 100000:05d}",
+                            "object_id": "o00001",
                             "object_name": "Пользователь",
                             "resource_state": [
-                                {
-                                    "state_id": "s00001",
-                                    "state_name": "неактивен"
-                                },
-                                {
-                                    "state_id": "s00002",
-                                    "state_name": "активен"
-                                }
+                                {"state_id": "s00001", "state_name": "неактивен"},
+                                {"state_id": "s00002", "state_name": "активен"}
                             ]
                         },
                         {
-                            "object_id": f"o{(timestamp + 2) % 100000:05d}",
+                            "object_id": "o00002",
                             "object_name": "Система",
                             "resource_state": [
-                                {
-                                    "state_id": "s00003",
-                                    "state_name": "ожидает"
-                                },
-                                {
-                                    "state_id": "s00004",
-                                    "state_name": "обработано"
-                                }
+                                {"state_id": "s00003", "state_name": "ожидает"},
+                                {"state_id": "s00004", "state_name": "обработано"}
                             ]
                         }
-                    ],
-                    "model_connections": [
-                        {
-                            "connection_out": f"o{(timestamp + 1) % 100000:05d}s00001",
-                            "connection_in": f"a{timestamp % 100000:05d}",
-                            "connection_label": "инициирует"
-                        },
-                        {
-                            "connection_out": f"a{timestamp % 100000:05d}",
-                            "connection_in": f"o{(timestamp + 1) % 100000:05d}s00002",
-                            "connection_label": "активирует"
-                        }
                     ]
+                
+                # Создаем связи между действиями и состояниями объектов
+                for action in actions:
+                    for obj in objects:
+                        if obj["resource_state"]:
+                            # Связь: начальное состояние -> действие
+                            connections.append({
+                                "connection_out": f"{obj['object_id']}s00001",
+                                "connection_in": action["action_id"],
+                                "connection_label": "инициирует"
+                            })
+                            # Связь: действие -> конечное состояние
+                            connections.append({
+                                "connection_out": action["action_id"],
+                                "connection_in": f"{obj['object_id']}s00002",
+                                "connection_label": "активирует"
+                            })
+                
+                model = {
+                    "model_actions": actions,
+                    "model_objects": objects,
+                    "model_connections": connections
                 }
                 
                 # ВЫВОДИМ JSON - ПОСТРОЧНО И С ПРИНУДИТЕЛЬНЫМ FLUSH

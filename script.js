@@ -175,57 +175,64 @@ document.getElementById('saveButton').addEventListener('click', () => {
     });
 
     // 2. Сохраняем объекты и их состояния
-    const objectNodes = cy.nodes('[type="object"]');
     const stateNodes = cy.nodes('[type="state"]');
 
-    // Собираем все состояния
-    const stateMap = new Map();
+    // Группируем состояния по объектам
+    const objectMap = new Map(); // object_id -> {object_name, states: []}
+
     stateNodes.forEach(stateNode => {
-        stateMap.set(stateNode.id(), {
-            id: stateNode.id(),
-            label: stateNode.data('label') || `Состояние ${stateNode.id()}`
+        const stateId = stateNode.id();
+        const stateLabel = stateNode.data('label') || `Состояние ${stateId}`;
+
+        // Парсим ID состояния вида "o00001s00001"
+        // Ищем 'o' в начале и 's' для разделения object_id и state_id
+        let objectId = "";
+        let statePart = "";
+
+        if (stateId.includes('s')) {
+            const sIndex = stateId.indexOf('s');
+            objectId = stateId.substring(0, sIndex);
+            statePart = stateId.substring(sIndex);
+        } else {
+            // Если формат неправильный, используем первую часть
+            objectId = stateId.length > 6 ? stateId.substring(0, 6) : stateId;
+            statePart = "s00001";
+        }
+
+        // Парсим метку вида "Пользователь: неактивен"
+        let objectName = "Объект";
+        let stateName = "состояние";
+
+        if (stateLabel.includes(':')) {
+            const parts = stateLabel.split(':');
+            objectName = parts[0].trim();
+            stateName = parts[1].trim();
+        } else {
+            objectName = stateLabel;
+        }
+
+        // Добавляем в карту объектов
+        if (!objectMap.has(objectId)) {
+            objectMap.set(objectId, {
+                object_id: objectId,
+                object_name: objectName,
+                resource_state: []
+            });
+        }
+
+        const obj = objectMap.get(objectId);
+        obj.resource_state.push({
+            state_id: statePart,
+            state_name: stateName
         });
     });
 
     // Сохраняем объекты
-    objectNodes.forEach(objectNode => {
-        const objectId = objectNode.id();  // ← Используем реальный ID
-        const resourceState = [];
-
-        // Ищем связанные состояния
-        const connectedEdges = objectNode.connectedEdges();
-        connectedEdges.forEach(edge => {
-            const sourceId = edge.source().id();
-            const targetId = edge.target().id();
-
-            // Если это связь объект-состояние
-            if (sourceId === objectId && stateMap.has(targetId)) {
-                const stateInfo = stateMap.get(targetId);
-                resourceState.push({
-                    state_id: stateInfo.id,
-                    state_name: stateInfo.label
-                });
-            } else if (targetId === objectId && stateMap.has(sourceId)) {
-                const stateInfo = stateMap.get(sourceId);
-                resourceState.push({
-                    state_id: stateInfo.id,
-                    state_name: stateInfo.label
-                });
-            }
-        });
-
-        // Если нет состояний, добавляем null
-        if (resourceState.length === 0) {
-            resourceState.push({
-                state_id: "s00000",
-                state_name: "null"
-            });
-        }
-
+    objectMap.forEach(obj => {
         output.model_objects.push({
-            object_id: objectId,  // ← Используем реальный ID
-            object_name: objectNode.data('label') || `Объект ${objectId}`,
-            resource_state: resourceState,
+            object_id: obj.object_id,
+            object_name: obj.object_name,
+            resource_state: obj.resource_state,
             object_links: {
                 manual: "",
                 API: "",

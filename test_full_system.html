@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест полной системы</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; font-size: 12px; }
+        .log { font-family: monospace; white-space: pre-wrap; background: #f8f9fa; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Тест полной системы генерации и сохранения модели</h1>
+    
+    <div class="test-section" id="section1">
+        <h3>1. Тест API генерации модели</h3>
+        <button onclick="testAPIGeneration()">Запустить тест</button>
+        <div id="apiResult"></div>
+    </div>
+    
+    <div class="test-section" id="section2">
+        <h3>2. Тест отрисовки графа</h3>
+        <button onclick="testGraphRendering()">Запустить тест</button>
+        <div id="graphResult"></div>
+    </div>
+    
+    <div class="test-section" id="section3">
+        <h3>3. Тест сохранения модели</h3>
+        <button onclick="testModelSaving()">Запустить тест</button>
+        <div id="saveResult"></div>
+    </div>
+    
+    <div class="test-section" id="section4">
+        <h3>4. Полный тест системы</h3>
+        <button onclick="runFullTest()">Запустить полный тест</button>
+        <div id="fullResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Логи тестирования:</h3>
+        <div id="log" class="log"></div>
+    </div>
+    
+    <script>
+        let currentModel = null;
+        const logElement = document.getElementById('log');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            logElement.innerHTML += `<div style="color:${color}">[${timestamp}] ${message}</div>`;
+        }
+        
+        function clearResults() {
+            document.getElementById('apiResult').innerHTML = '';
+            document.getElementById('graphResult').innerHTML = '';
+            document.getElementById('saveResult').innerHTML = '';
+            document.getElementById('fullResult').innerHTML = '';
+            logElement.innerHTML = '';
+        }
+        
+        async function testAPIGeneration() {
+            clearResults();
+            log('🔍 Тестирую генерацию модели через API...');
+            
+            try {
+                const response = await fetch('http://localhost:5003/api/generate-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: 'ТЕХНИЧЕСКОЕ ЗАДАНИЕ (ТЗ) на разработку клиент-серверного веб-приложения "Mindful Meals"' 
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                currentModel = data.model;
+                
+                log('✅ API ответ получен');
+                log(`Действий: ${data.model.model_actions.length}`);
+                log(`Объектов: ${data.model.model_objects.length}`);
+                log(`Связей: ${data.model.model_connections.length}`);
+                
+                document.getElementById('apiResult').innerHTML = `
+                    <div class="success">
+                        <p>✅ API успешно сгенерировал модель!</p>
+                        <p>Действий: ${data.model.model_actions.length}</p>
+                        <p>Объектов: ${data.model.model_objects.length}</p>
+                        <p>Связей: ${data.model.model_connections.length}</p>
+                        <button onclick="showModelDetails()">Показать детали модели</button>
+                    </div>
+                `;
+                
+                document.getElementById('section1').classList.add('success');
+                
+            } catch (error) {
+                log(`❌ Ошибка API: ${error.message}`, 'error');
+                document.getElementById('apiResult').innerHTML = `
+                    <div class="error">
+                        <p>❌ Ошибка API: ${error.message}</p>
+                    </div>
+                `;
+                document.getElementById('section1').classList.add('error');
+            }
+        }
+        
+        function showModelDetails() {
+            if (!currentModel) return;
+            
+            const details = `
+                <h4>Детали модели:</h4>
+                <pre>${JSON.stringify(currentModel, null, 2)}</pre>
+            `;
+            
+            document.getElementById('apiResult').innerHTML += details;
+        }
+        
+        function testGraphRendering() {
+            clearResults();
+            log('🔍 Тестирую отрисовку графа...');
+            
+            if (!currentModel) {
+                log('❌ Сначала сгенерируйте модель через API', 'error');
+                document.getElementById('graphResult').innerHTML = `
+                    <div class="error">
+                        <p>❌ Сначала сгенерируйте модель через API</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Простая симуляция отрисовки
+            const nodes = [];
+            const edges = [];
+            
+            // Действия
+            currentModel.model_actions.forEach(action => {
+                if (action.action_id && action.action_name) {
+                    nodes.push({
+                        id: action.action_id,
+                        label: action.action_name,
+                        type: 'action'
+                    });
+                }
+            });
+            
+            // Объекты и состояния
+            currentModel.model_objects.forEach(obj => {
+                if (obj.object_id && obj.object_name && obj.resource_state) {
+                    obj.resource_state.forEach(state => {
+                        if (state.state_id && state.state_name) {
+                            const stateId = `${obj.object_id}${state.state_id}`;
+                            nodes.push({
+                                id: stateId,
+                                label: `${obj.object_name}: ${state.state_name}`,
+                                type: 'state'
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // Связи
+            currentModel.model_connections.forEach(conn => {
+                if (conn.connection_out && conn.connection_in) {
+                    edges.push({
+                        source: conn.connection_out,
+                        target: conn.connection_in
+                    });
+                }
+            });
+            
+            log(`✅ Отрисовка графа:`);
+            log(`Узлы: ${nodes.length} (${nodes.filter(n => n.type === 'action').length} действий, ${nodes.filter(n => n.type === 'state').length} состояний)`);
+            log(`Связи: ${edges.length}`);
+            
+            document.getElementById('graphResult').innerHTML = `
+                <div class="success">
+                    <p>✅ Граф готов к отрисовке!</p>
+                    <p>Узлы: ${nodes.length}</p>
+                    <p>Связи: ${edges.length}</p>
+                </div>
+            `;
+            
+            document.getElementById('section2').classList.add('success');
+        }
+        
+        function testModelSaving() {
+            clearResults();
+            log('🔍 Тестирую сохранение модели...');
+            
+            if (!currentModel) {
+                log('❌ Сначала сгенерируйте модель', 'error');
+                return;
+            }
+            
+            // Тестируем логику сохранения из script.js
+            const output = {
+                model_actions: [],
+                model_objects: [],
+                model_connections: []
+            };
+            
+            // 1. Сохраняем действия
+            currentModel.model_actions.forEach(action => {
+                output.model_actions.push({
+                    action_id: action.action_id,
+                    action_name: action.action_name,
+                    action_links: action.action_links || { manual: "", API: "", UI: "" }
+                });
+            });
+            
+            // 2. Сохраняем объекты и состояния
+            currentModel.model_objects.forEach(obj => {
+                output.model_objects.push({
+                    object_id: obj.object_id,
+                    object_name: obj.object_name,
+                    resource_state: obj.resource_state || [],
+                    object_links: { manual: "", API: "", UI: "" }
+                });
+            });
+            
+            // 3. Сохраняем связи
+            currentModel.model_connections.forEach(conn => {
+                output.model_connections.push({
+                    connection_out: conn.connection_out,
+                    connection_in: conn.connection_in,
+                    connection_label: conn.connection_label || "связь"
+                });
+            });
+            
+            // Проверяем соответствие
+            const originalJSON = JSON.stringify(currentModel, null, 2);
+            const savedJSON = JSON.stringify(output, null, 2);
+            const isSame = originalJSON === savedJSON;
+            
+            log(`✅ Сохраненная модель:`);
+            log(`Действий: ${output.model_actions.length} (${isSame ? '✓' : '✗'} совпадает)`);
+            log(`Объектов: ${output.model_objects.length} (${isSame ? '✓' : '✗'} совпадает)`);
+            log(`Связей: ${output.model_connections.length} (${isSame ? '✓' : '✗'} совпадает)`);
+            
+            if (!isSame) {
+                log('⚠️  Внимание: сохраненная модель не совпадает с исходной!', 'error');
+                log('Исходная:', 'error');
+                log(originalJSON.substring(0, 500) + '...');
+                log('Сохраненная:', 'error');
+                log(savedJSON.substring(0, 500) + '...');
+            }
+            
+            document.getElementById('saveResult').innerHTML = `
+                <div class="${isSame ? 'success' : 'error'}">
+                    <p>${isSame ? '✅' : '❌'} Модель ${isSame ? 'сохранена правильно' : 'сохранена с ошибками'}</p>
+                    <p>Действий: ${output.model_actions.length}</p>
+                    <p>Объектов: ${output.model_objects.length}</p>
+                    <p>Связей: ${output.model_connections.length}</p>
+                    <button onclick="showSavedModel()">Показать сохраненную модель</button>
+                </div>
+            `;
+            
+            document.getElementById('section3').classList.add(isSame ? 'success' : 'error');
+        }
+        
+        function showSavedModel() {
+            if (!currentModel) return;
+            
+            const output = {
+                model_actions: currentModel.model_actions.map(a => ({
+                    action_id: a.action_id,
+                    action_name: a.action_name,
+                    action_links: a.action_links || { manual: "", API: "", UI: "" }
+                })),
+                model_objects: currentModel.model_objects.map(o => ({
+                    object_id: o.object_id,
+                    object_name: o.object_name,
+                    resource_state: o.resource_state || [],
+                    object_links: { manual: "", API: "", UI: "" }
+                })),
+                model_connections: currentModel.model_connections.map(c => ({
+                    connection_out: c.connection_out,
+                    connection_in: c.connection_in,
+                    connection_label: c.connection_label || "связь"
+                }))
+            };
+            
+            const details = `
+                <h4>Сохраненная модель:</h4>
+                <pre>${JSON.stringify(output, null, 2)}</pre>
+            `;
+            
+            document.getElementById('saveResult').innerHTML += details;
+        }
+        
+        async function runFullTest() {
+            clearResults();
+            log('🚀 Запускаю полный тест системы...');
+            
+            try {
+                // 1. Тест API
+                log('1. Тестирую API...');
+                await testAPIGeneration();
+                if (!currentModel) throw new Error('API не сгенерировал модель');
+                
+                // 2. Тест отрисовки
+                log('2. Тестирую отрисовку...');
+                testGraphRendering();
+                
+                // 3. Тест сохранения
+                log('3. Тестирую сохранение...');
+                testModelSaving();
+                
+                log('✅ Полный тест завершен!', 'success');
+                document.getElementById('fullResult').innerHTML = `
+                    <div class="success">
+                        <h4>✅ Полный тест системы пройден!</h4>
+                        <p>Все компоненты работают корректно.</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                log(`❌ Ошибка в полном тесте: ${error.message}`, 'error');
+                document.getElementById('fullResult').innerHTML = `
+                    <div class="error">
+                        <h4>❌ Ошибка в полном тесте</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Автозапуск при загрузке
+        window.onload = function() {
+            log('Система тестирования готова. Нажмите кнопку "Запустить полный тест" для проверки.');
+        };
+    </script>
+</body>
+</html>

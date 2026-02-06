@@ -20,6 +20,7 @@ class GraphManager {
         this.apiAvailable = false;
         this.apiBaseUrl = 'http://localhost:3000'; // Подключение через прокси
         this.llmProvider = 'ollama';
+        this.currentModel = null; // Текущая модель, полученная от API
 
         // Настройка методов с правильным контекстом
         this.handleFileUpload = this.handleFileUpload.bind(this);
@@ -448,6 +449,9 @@ class GraphManager {
                 throw new Error('Модель не сгенерирована или имеет некорректный формат');
             }
 
+            // Сохраняем исходную модель
+            this.currentModel = response.model;
+
             if (!window.renderGraph) {
                 console.warn('renderGraph не доступен');
                 this.showMessage('Ошибка рендеринга графа: renderGraph не доступен', 'error');
@@ -699,6 +703,37 @@ class GraphManager {
             }
             this.addMessage('Провайдер LLM изменен на Ollama', 'bot');
         }
+    }
+
+    saveCurrentModel(filename = 'model') {
+        if (!this.currentModel) {
+            this.showMessage('Нет текущей модели для сохранения', 'error');
+            return;
+        }
+
+        // Создаем объект для сохранения
+        const dataToSave = {
+            model_actions: this.currentModel.model_actions || [],
+            model_objects: this.currentModel.model_objects || [],
+            model_connections: this.currentModel.model_connections || []
+        };
+
+        // Создаем JSON строку
+        const jsonStr = JSON.stringify(dataToSave, null, 2);
+
+        // Создаем blob и ссылку для скачивания
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.showMessage(`✅ Модель сохранена как ${filename}.json`, 'success');
+        console.log('💾 Сохраненная модель:', dataToSave);
     }
 }
 
