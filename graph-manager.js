@@ -156,7 +156,10 @@ class GraphManager {
             
             if (response.ok) {
                 this.apiAvailable = true;
-                console.log('✅ Прокси и API доступны!');
+                // ОБНОВЛЯЕМ apiBaseUrl на найденный порт
+                const url = new URL(apiUrl);
+                this.apiBaseUrl = `http://localhost:${url.port}`;
+                console.log(`✅ Прокси и API доступны! Использую порт: ${url.port}`);
                 
                 // Показываем приветственное сообщение
                 this.showWelcomeMessage();
@@ -375,7 +378,8 @@ class GraphManager {
         try {
             const apiUrl = `${this.apiBaseUrl}/api/generate-model`;
             console.log(`📤 Отправляю запрос к API: ${apiUrl} (Провайдер: ${this.llmProvider})`);
-            
+            console.log(`🔧 Текущий apiBaseUrl: ${this.apiBaseUrl}`);
+
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
