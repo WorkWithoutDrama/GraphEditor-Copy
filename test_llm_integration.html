@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест интеграции LLM</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; font-size: 12px; }
+        .log { font-family: monospace; white-space: pre-wrap; background: #f8f9fa; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto; }
+        .status { padding: 5px 10px; border-radius: 3px; display: inline-block; }
+        .status-ok { background: #28a745; color: white; }
+        .status-error { background: #dc3545; color: white; }
+        .status-warning { background: #ffc107; color: black; }
+    </style>
+</head>
+<body>
+    <h1>Тест интеграции LLM в систему</h1>
+    
+    <div class="test-section">
+        <h3>1. Проверка доступности LLM (Ollama)</h3>
+        <button onclick="checkLLM()">Проверить LLM</button>
+        <div id="llmStatus">
+            <p>Статус: <span class="status" id="statusIndicator">Не проверено</span></p>
+        </div>
+        <div id="llmDetails"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Тест API генерации модели</h3>
+        <button onclick="testAPIGeneration()">Запустить тест генерации</button>
+        <div id="apiTestResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Детальный тест с промптом</h3>
+        <textarea id="testText" rows="5" style="width: 100%; margin-bottom: 10px;">
+ТЕХНИЧЕСКОЕ ЗАДАНИЕ (ТЗ) на разработку клиент-серверного веб-приложения "Mindful Meals"
+
+1. ОБЩИЕ СВЕДЕНИЯ
+1.1. Название проекта: Mindful Meals (Планировщик питания)
+1.2. Цель проекта: Разработка интерактивного веб-приложения для персонализированного планирования здорового питания.
+
+2. ТРЕБОВАНИЯ К ФУНКЦИОНАЛУ
+2.1. Клиентская часть (Frontend)
+    2.1.1. Регистрация и Авторизация:
+        * Регистрация по email/паролю.
+        * Авторизация и восстановление пароля.
+    2.1.2. Настройка Профиля:
+        * Ввод личных данных: пол, возраст, рост, вес.
+        * Установка цели: похудение, поддержание, набор массы.
+    2.1.3. Планировщик Питания:
+        * Отображение недельного календаря.
+        * Добавление/удаление/редактирование приемов пищи.
+        </textarea>
+        <button onclick="testWithDetailedPrompt()">Протестировать с детальным промптом</button>
+        <div id="detailedTestResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Логи тестирования</h3>
+        <div id="log" class="log"></div>
+    </div>
+    
+    <script>
+        const logElement = document.getElementById('log');
+        const statusIndicator = document.getElementById('statusIndicator');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'error' ? 'status-error' : type === 'success' ? 'status-ok' : 'status-warning';
+            const typeIcon = type === 'error' ? '❌' : type === 'success' ? '✅' : '🔍';
+            
+            logElement.innerHTML += `<div>${typeIcon} [${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function updateStatus(text, type = 'info') {
+            statusIndicator.textContent = text;
+            statusIndicator.className = 'status ' + 
+                (type === 'success' ? 'status-ok' : 
+                 type === 'error' ? 'status-error' : 'status-warning');
+        }
+        
+        async function checkLLM() {
+            log('🔍 Проверяю доступность LLM (Ollama)...');
+            updateStatus('Проверка...', 'warning');
+            
+            try {
+                // Проверяем API здоровья
+                const healthResponse = await fetch('http://localhost:5003/api/health');
+                if (!healthResponse.ok) {
+                    throw new Error(`API не отвечает: ${healthResponse.status}`);
+                }
+                
+                const healthData = await healthResponse.json();
+                log(`✅ API отвечает: ${JSON.stringify(healthData)}`, 'success');
+                
+                // Проверяем LLM статус
+                if (healthData.llm_available) {
+                    log(`🤖 LLM доступен: ${healthData.llm_status}`, 'success');
+                    updateStatus(`LLM доступен: ${healthData.llm_status}`, 'success');
+                    
+                    document.getElementById('llmDetails').innerHTML = `
+                        <div class="success">
+                            <p>✅ LLM интегрирован с системой!</p>
+                            <p>Статус: ${healthData.llm_status}</p>
+                            <p>API: ${healthData.api}</p>
+                        </div>
+                    `;
+                } else {
+                    log(`⚠️ LLM недоступен: ${healthData.llm_status}`, 'warning');
+                    updateStatus(`LLM недоступен: ${healthData.llm_status}`, 'warning');
+                    
+                    document.getElementById('llmDetails').innerHTML = `
+                        <div class="warning">
+                            <p>⚠️ LLM недоступен</p>
+                            <p>Статус: ${healthData.llm_status}</p>
+                            <p>Система будет использовать упрощенный анализ текста</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                log(`❌ Ошибка проверки LLM: ${error.message}`, 'error');
+                updateStatus(`Ошибка: ${error.message}`, 'error');
+                
+                document.getElementById('llmDetails').innerHTML = `
+                    <div class="error">
+                        <p>❌ Не удалось проверить LLM</p>
+                        <p>Ошибка: ${error.message}</p>
+                        <p>Убедитесь, что API сервер запущен</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testAPIGeneration() {
+            log('🔍 Тестирую генерацию модели через API...');
+            
+            const testText = "Регистрация пользователя в системе. Пользователь вводит email и пароль. Система проверяет данные и создает учетную запись.";
+            
+            try {
+                const response = await fetch('http://localhost:5003/api/generate-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: testText })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ошибка: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                log(`✅ API ответ получен`, 'success');
+                log(`📊 Статистика модели:`, 'success');
+                log(`   Действий: ${data.model?.model_actions?.length || 0}`, 'success');
+                log(`   Объектов: ${data.model?.model_objects?.length || 0}`, 'success');
+                log(`   Связей: ${data.model?.model_connections?.length || 0}`, 'success');
+                
+                // Проверяем качество модели
+                const hasLLM = data.model?.model_objects?.length > 1 || 
+                              data.model?.model_actions?.some(a => !a.action_name.includes('из ТЗ'));
+                
+                document.getElementById('apiTestResult').innerHTML = `
+                    <div class="${hasLLM ? 'success' : 'warning'}">
+                        <p>${hasLLM ? '✅' : '⚠️'} Модель сгенерирована ${hasLLM ? 'с использованием LLM' : 'с упрощенным анализом'}</p>
+                        <p>Действий: ${data.model?.model_actions?.length || 0}</p>
+                        <p>Объектов: ${data.model?.model_objects?.length || 0}</p>
+                        <p>Связей: ${data.model?.model_connections?.length || 0}</p>
+                        <button onclick="showModelDetails()">Показать модель</button>
+                        <div id="modelDetails" style="display: none; margin-top: 10px;">
+                            <pre>${JSON.stringify(data.model, null, 2)}</pre>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                log(`❌ Ошибка API: ${error.message}`, 'error');
+                
+                document.getElementById('apiTestResult').innerHTML = `
+                    <div class="error">
+                        <p>❌ Ошибка генерации модели</p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function showModelDetails() {
+            const detailsDiv = document.getElementById('modelDetails');
+            detailsDiv.style.display = detailsDiv.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        async function testWithDetailedPrompt() {
+            const testText = document.getElementById('testText').value;
+            log('🔍 Тестирую с детальным промптом...');
+            log(`📄 Текст ТЗ (${testText.length} символов): ${testText.substring(0, 100)}...`);
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch('http://localhost:5003/api/generate-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: testText })
+                });
+                
+                const endTime = Date.now();
+                log(`⏱️ Время выполнения: ${endTime - startTime}ms`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ошибка: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Анализируем ответ
+                const model = data.model;
+                const actionNames = model?.model_actions?.map(a => a.action_name) || [];
+                const objectNames = model?.model_objects?.map(o => o.object_name) || [];
+                
+                log(`✅ Модель сгенерирована за ${endTime - startTime}ms`, 'success');
+                log(`📊 Детали:`, 'success');
+                log(`   • Действий: ${actionNames.length}`, 'success');
+                log(`   • Объектов: ${objectNames.length}`, 'success');
+                log(`   • Связей: ${model?.model_connections?.length || 0}`, 'success');
+                
+                if (actionNames.length > 0) {
+                    log(`   • Примеры действий: ${actionNames.slice(0, 3).join(', ')}`, 'success');
+                }
+                if (objectNames.length > 0) {
+                    log(`   • Примеры объектов: ${objectNames.slice(0, 3).join(', ')}`, 'success');
+                }
+                
+                // Определяем, использовался ли LLM
+                const usesLLM = actionNames.length > 3 || 
+                               objectNames.length > 1 ||
+                               actionNames.some(name => name.length > 20 && !name.includes('из ТЗ'));
+                
+                document.getElementById('detailedTestResult').innerHTML = `
+                    <div class="${usesLLM ? 'success' : 'warning'}">
+                        <h4>${usesLLM ? '✅ LLM БЫЛ ИСПОЛЬЗОВАН' : '⚠️ ИСПОЛЬЗОВАН УПРОЩЕННЫЙ АНАЛИЗ'}</h4>
+                        <p>Время генерации: ${endTime - startTime}ms</p>
+                        <p>Действий: ${actionNames.length}</p>
+                        <p>Объектов: ${objectNames.length}</p>
+                        <p>Связей: ${model?.model_connections?.length || 0}</p>
+                        ${usesLLM ? '<p>✅ LLM успешно проанализировал ТЗ и сгенерировал модель</p>' : 
+                          '<p>⚠️ LLM недоступен или произошла ошибка. Использован упрощенный анализ.</p>'}
+                        <button onclick="showDetailedModel()">Показать полную модель</button>
+                        <div id="detailedModel" style="display: none; margin-top: 10px;">
+                            <pre>${JSON.stringify(model, null, 2)}</pre>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                log(`❌ Ошибка: ${error.message}`, 'error');
+                
+                document.getElementById('detailedTestResult').innerHTML = `
+                    <div class="error">
+                        <p>❌ Ошибка генерации модели</p>
+                        <p>${error.message}</p>
+                        <p>Проверьте:</p>
+                        <ul>
+                            <li>Запущен ли API сервер</li>
+                            <li>Доступен ли порт 5003</li>
+                            <li>Запущен ли Ollama (для LLM функциональности)</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+        
+        function showDetailedModel() {
+            const detailsDiv = document.getElementById('detailedModel');
+            detailsDiv.style.display = detailsDiv.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Автопроверка при загрузке
+        window.onload = function() {
+            log('Система тестирования LLM интеграции готова.');
+            log('Нажмите "Проверить LLM" для начала тестирования.');
+        };
+    </script>
+</body>
+</html>

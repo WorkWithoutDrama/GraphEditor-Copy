@@ -380,8 +380,14 @@ class GraphManager {
         
         try {
             const apiUrl = `${this.apiBaseUrl}/api/generate-model`;
-            console.log(`📤 Отправляю запрос к API: ${apiUrl} (Провайдер: ${this.llmProvider})`);
+            console.log(`📤 Отправляю запрос к API: ${apiUrl}`);
+            console.log(`🤖 Провайдер LLM: ${this.llmProvider}`);
             console.log(`🔧 Текущий apiBaseUrl: ${this.apiBaseUrl}`);
+            console.log(`📄 Длина текста: ${text.length} символов`);
+            console.log(`📝 Текст (первые 200 символов): ${text.substring(0, 200)}...`);
+
+            console.log(`⏳ Отправляю запрос к API...`);
+            const startTime = Date.now();
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -389,15 +395,37 @@ class GraphManager {
                 body: JSON.stringify({ text }),
                 mode: 'cors'
             });
-            
+
+            const endTime = Date.now();
+            console.log(`✅ Ответ получен за ${endTime - startTime}ms`);
+
             if (!response.ok) {
-                throw new Error(`HTTP error: ${response.status}`);
+                const errorText = await response.text();
+                console.error(`❌ HTTP ошибка: ${response.status}`, errorText);
+                throw new Error(`HTTP error: ${response.status} - ${errorText}`);
             }
-            
-            return await response.json();
-            
+
+            const result = await response.json();
+
+            if (result.success === false) {
+                console.error(`❌ Ошибка в ответе API:`, result.error);
+                throw new Error(`API error: ${result.error}`);
+            }
+
+            console.log(`🎯 Модель получена успешно!`);
+            console.log(`📊 Статистика:`);
+            console.log(`   • Действий: ${result.model?.model_actions?.length || 0}`);
+            console.log(`   • Объектов: ${result.model?.model_objects?.length || 0}`);
+            console.log(`   • Связей: ${result.model?.model_connections?.length || 0}`);
+
+            return result;
+
         } catch (error) {
-            console.error('❌ Ошибка API:', error);
+            console.error('❌ Ошибка при генерации модели:', error);
+
+            // Показываем ошибку пользователю
+            this.showMessage(`Ошибка генерации модели: ${error.message}`, 'error');
+
             throw error;
         }
     }

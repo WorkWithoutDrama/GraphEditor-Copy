@@ -59,118 +59,94 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                 data = json.loads(post_data.decode('utf-8'))
                 text = data.get('text', '')
                 
-                print(f"📄 Текст запроса: {text[:50]}...")
+                print(f"📄 Текст запроса: {text[:100]}...")
                 print(f"📏 Длина: {len(text)} символов")
                 sys.stdout.flush()
                 
-                # Создаем тестовую модель на основе анализа текста
-                print("🔄 АНАЛИЗИРУЮ ТЕКСТ И ГЕНЕРИРУЮ МОДЕЛЬ...")
+                # Шаг 1: Проверяем доступность LLM
+                print("🔍 ПРОВЕРЯЮ ДОСТУПНОСТЬ LLM (Ollama)...")
                 sys.stdout.flush()
                 
-                # Простой анализ текста для извлечения действий и объектов
-                actions = []
-                objects = []
-                connections = []
+                llm_available, llm_status = self.check_llm_availability()
                 
-                # Извлекаем действия из текста (упрощенно)
-                action_keywords = ['Регистрация', 'Авторизация', 'Ввод', 'Установка', 'Выбор', 
-                                 'Расчет', 'Отображение', 'Добавление', 'Удаление', 'Редактирование',
-                                 'Поиск', 'Просмотр', 'Генерация', 'Разработка', 'Хранение']
+                if not llm_available:
+                    print(f"❌ LLM НЕДОСТУПЕН: {llm_status}")
+                    print("⚠️  Использую упрощенный анализ текста")
+                    sys.stdout.flush()
+                    
+                    # Используем упрощенный анализ если LLM недоступен
+                    model = self.simple_text_analysis(text)
+                else:
+                    print(f"✅ LLM ДОСТУПЕН: {llm_status}")
+                    print("🔄 ЗАПУСКАЮ LLM ДЛЯ АНАЛИЗА ТЗ...")
+                    sys.stdout.flush()
+                    
+                    # Шаг 2: Генерируем промпт для LLM
+                    prompt = self.generate_llm_prompt(text)
+                    print(f"📝 Промпт для LLM (первые 300 символов): {prompt[:300]}...")
+                    sys.stdout.flush()
+                    
+                    # Шаг 3: Отправляем запрос к LLM
+                    print("🤖 ОТПРАВЛЯЮ ЗАПРОС К LLM...")
+                    sys.stdout.flush()
+                    
+                    llm_response = self.query_llm(prompt)
+                    
+                    if llm_response["success"]:
+                        print("✅ LLM ОТВЕТИЛ УСПЕШНО!")
+                        print(f"📄 Ответ LLM (первые 300 символов): {llm_response['response'][:300]}...")
+                        sys.stdout.flush()
+                        
+                        # Шаг 4: Парсим ответ LLM
+                        model = self.parse_llm_response(llm_response["response"])
+                        
+                        if not model:
+                            print("❌ НЕ УДАЛОСЬ РАСПАРСИТЬ ОТВЕТ LLМ")
+                            print("⚠️  Использую упрощенный анализ")
+                            sys.stdout.flush()
+                            model = self.simple_text_analysis(text)
+                        else:
+                            print("🎯 МОДЕЛЬ СГЕНЕРИРОВАНА LLM!")
+                            sys.stdout.flush()
+                    else:
+                        print(f"❌ ОШИБКА LLM: {llm_response['error']}")
+                        print("⚠️  Использую упрощенный анализ")
+                        sys.stdout.flush()
+                        model = self.simple_text_analysis(text)
                 
-                lines = text.split('\n')
-                action_counter = 1
-                object_counter = 1
-                state_counter = 1
+                # ВЫВОДИМ JSON - ПОСТРОЧНО И С ПРИНУДИТЕЛЬНЫМ FLUSH
+                print("🎯 СГЕНЕРИРОВАННАЯ МОДЕЛЬ:")
+                sys.stdout.flush()
                 
-                for line in lines:
-                    line_lower = line.lower()
-                    # Ищем действия
-                    for keyword in action_keywords:
-                        if keyword.lower() in line_lower:
-                            action_id = f"a{action_counter:05d}"
-                            action_name = f"{keyword} из ТЗ"
-                            actions.append({
-                                "action_id": action_id,
-                                "action_name": action_name,
-                                "action_links": {"manual": "", "API": "", "UI": ""}
-                            })
-                            action_counter += 1
-                            
-                    # Ищем объекты
-                    object_keywords = ['пользователь', 'профиль', 'система', 'база данных', 
-                                     'рецепт', 'продукт', 'план', 'список', 'календарь']
-                    for obj_keyword in object_keywords:
-                        if obj_keyword in line_lower:
-                            # Проверяем, есть ли уже такой объект
-                            existing_obj = next((o for o in objects if o["object_name"].lower() == obj_keyword), None)
-                            if not existing_obj:
-                                object_id = f"o{object_counter:05d}"
-                                objects.append({
-                                    "object_id": object_id,
-                                    "object_name": obj_keyword.capitalize(),
-                                    "resource_state": [
-                                        {
-                                            "state_id": "s00001",
-                                            "state_name": "неактивен"
-                                        },
-                                        {
-                                            "state_id": "s00002",
-                                            "state_name": "активен"
-                                        }
-                                    ]
-                                })
-                                object_counter += 1
+                json_str = json.dumps(model, ensure_ascii=False, indent=2)
+                for line in json_str.split('\n'):
+                    print(line)
+                    sys.stdout.flush()
                 
-                # Если не нашли действий и объектов, создаем тестовые
-                if not actions:
-                    actions = [{
-                        "action_id": "a00001",
-                        "action_name": "Регистрация пользователя",
-                        "action_links": {"manual": "", "API": "", "UI": ""}
-                    }]
+                print("📊 СТАТИСТИКА:")
+                print(f"• Действий: {len(model.get('model_actions', []))}")
+                print(f"• Объектов: {len(model.get('model_objects', []))}")
+                print(f"• Связей: {len(model.get('model_connections', []))}")
+                sys.stdout.flush()
                 
-                if not objects:
-                    objects = [
-                        {
-                            "object_id": "o00001",
-                            "object_name": "Пользователь",
-                            "resource_state": [
-                                {"state_id": "s00001", "state_name": "неактивен"},
-                                {"state_id": "s00002", "state_name": "активен"}
-                            ]
-                        },
-                        {
-                            "object_id": "o00002",
-                            "object_name": "Система",
-                            "resource_state": [
-                                {"state_id": "s00003", "state_name": "ожидает"},
-                                {"state_id": "s00004", "state_name": "обработано"}
-                            ]
-                        }
-                    ]
+                # Отправляем ответ
+                response = {"success": True, "model": model}
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode())
                 
-                # Создаем связи между действиями и состояниями объектов
-                for action in actions:
-                    for obj in objects:
-                        if obj["resource_state"]:
-                            # Связь: начальное состояние -> действие
-                            connections.append({
-                                "connection_out": f"{obj['object_id']}s00001",
-                                "connection_in": action["action_id"],
-                                "connection_label": "инициирует"
-                            })
-                            # Связь: действие -> конечное состояние
-                            connections.append({
-                                "connection_out": action["action_id"],
-                                "connection_in": f"{obj['object_id']}s00002",
-                                "connection_label": "активирует"
-                            })
+                print("✅ ОТВЕТ ОТПРАВЛЕН")
+                sys.stdout.flush()
                 
-                model = {
-                    "model_actions": actions,
-                    "model_objects": objects,
-                    "model_connections": connections
-                }
+            except Exception as e:
+                print(f"❌ ОШИБКА: {e}")
+                sys.stdout.flush()
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode())
                 
                 # ВЫВОДИМ JSON - ПОСТРОЧНО И С ПРИНУДИТЕЛЬНЫМ FLUSH
                 print("🎯 СГЕНЕРИРОВАННАЯ МОДЕЛЬ:")
@@ -210,6 +186,269 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"error": "Not found"}).encode())
+    
+    def check_llm_availability(self):
+        """Проверяет доступность LLM (Ollama)"""
+        try:
+            import subprocess
+            # Проверяем, запущен ли сервер Ollama
+            result = subprocess.run(
+                ["curl", "-s", "http://localhost:11434/api/tags"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0:
+                # Проверяем наличие модели llama3.2
+                if "llama3.2" in result.stdout:
+                    return True, "Ollama с моделью llama3.2"
+                else:
+                    return False, "Модель llama3.2 не найдена"
+            else:
+                return False, "Сервер Ollama не запущен"
+                
+        except subprocess.TimeoutExpired:
+            return False, "Таймаут проверки"
+        except Exception as e:
+            return False, f"Ошибка: {str(e)}"
+    
+    def generate_llm_prompt(self, text):
+        """Генерирует промпт для LLM"""
+        prompt = """Ты - аналитик процессов. Твоя задача - проанализировать техническое задание и создать формализованную модель процессов.
+
+АНАЛИЗИРУЙ следующее техническое задание:
+
+"""
+        prompt += text
+        prompt += """
+
+ИНСТРУКЦИИ ПО АНАЛИЗУ:
+
+1. ИДЕНТИФИЦИРУЙ ДЕЙСТВИЯ:
+   - Найдите все ключевые действия/процессы в ТЗ
+   - Каждое действие должно иметь уникальный ID в формате "a" + 5 цифр (например: a00001)
+   - Название действия должно кратко описывать процесс
+
+2. ИДЕНТИФИЦИРУЙ ОБЪЕКТЫ И ИХ СОСТОЯНИЯ:
+   - Найдите все объекты системы (сущности, ресурсы)
+   - Для каждого объекта определите возможные состояния
+   - Каждый объект должен иметь уникальный ID в формате "o" + 5 цифр (например: o00001)
+   - Каждое состояние должно иметь уникальный ID в формате "s" + 5 цифр (например: s00001)
+   - Объект+состояние представляется как единое целое (например: "Пользователь: неактивен")
+
+3. ОПРЕДЕЛИ СВЯЗИ:
+   - Для каждого действия найдите:
+     * Какие объекты в каких состояниях необходимы для выполнения действия (начальные условия)
+     * В какие состояния переходят объекты после выполнения действия (конечные условия)
+   - Связи имеют формат: "объект+состояние" → "действие" → "объект+состояние"
+   - connection_out - ID источника (начальное состояние или действие)
+   - connection_in - ID цели (действие или конечное состояние)
+
+4. ФОРМАТ ВЫВОДА:
+   - Выведи ТОЛЬКО валидный JSON без дополнительного текста
+   - JSON должен содержать три массива: model_actions, model_objects, model_connections
+   - Все ID должны быть в правильном формате
+   - Если объекта/действия/состояния нет в модели - добавь его
+
+5. ПРИМЕР ДЛЯ ТЗ "Регистрация пользователя":
+   - Действие: "Регистрация пользователя" (a00001)
+   - Объект: "Пользователь" (o00001) с состояниями: "незарегистрирован" (s00001), "зарегистрирован" (s00002)
+   - Связь: o00001s00001 → a00001 → o00001s00002
+
+ВЕРНИ ТОЛЬКО JSON ОТВЕТ:"""
+        
+        return prompt
+    
+    def query_llm(self, prompt):
+        """Отправляет запрос к LLM (Ollama)"""
+        try:
+            import subprocess
+            import json as json_module
+            
+            # Подготавливаем запрос к Ollama API
+            request_data = {
+                "model": "llama3.2",
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.7,
+                    "num_predict": 2000
+                }
+            }
+            
+            # Выполняем запрос через curl
+            curl_command = [
+                "curl", "-s",
+                "-X", "POST",
+                "http://localhost:11434/api/generate",
+                "-H", "Content-Type: application/json",
+                "-d", json_module.dumps(request_data)
+            ]
+            
+            result = subprocess.run(
+                curl_command,
+                capture_output=True,
+                text=True,
+                timeout=30  # 30 секунд таймаут для LLM
+            )
+            
+            if result.returncode == 0:
+                try:
+                    response_data = json_module.loads(result.stdout)
+                    if "response" in response_data:
+                        return {
+                            "success": True,
+                            "response": response_data["response"]
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "error": "Неожиданный формат ответа LLM"
+                        }
+                except json_module.JSONDecodeError:
+                    return {
+                        "success": False,
+                        "error": "Не удалось распарсить JSON от LLM"
+                    }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Ошибка выполнения запроса: {result.stderr}"
+                }
+                
+        except subprocess.TimeoutExpired:
+            return {
+                "success": False,
+                "error": "Таймаут запроса к LLM"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Ошибка: {str(e)}"
+            }
+    
+    def parse_llm_response(self, response):
+        """Парсит и валидирует ответ LLM"""
+        try:
+            # Ищем JSON в ответе
+            json_start = response.find('{')
+            json_end = response.rfind('}') + 1
+            
+            if json_start == -1 or json_end == 0:
+                return None
+            
+            json_str = response[json_start:json_end]
+            model = json.loads(json_str)
+            
+            # Базовая валидация
+            if not all(key in model for key in ["model_actions", "model_objects", "model_connections"]):
+                return None
+            
+            return model
+            
+        except json.JSONDecodeError:
+            return None
+        except Exception:
+            return None
+    
+    def simple_text_analysis(self, text):
+        """Упрощенный анализ текста (используется если LLM недоступен)"""
+        actions = []
+        objects = []
+        connections = []
+        
+        # Извлекаем действия из текста (упрощенно)
+        action_keywords = ['Регистрация', 'Авторизация', 'Ввод', 'Установка', 'Выбор', 
+                         'Расчет', 'Отображение', 'Добавление', 'Удаление', 'Редактирование',
+                         'Поиск', 'Просмотр', 'Генерация', 'Разработка', 'Хранение']
+        
+        lines = text.split('\n')
+        action_counter = 1
+        object_counter = 1
+        
+        # Находим уникальные действия
+        found_actions = []
+        for line in lines:
+            line_lower = line.lower()
+            for keyword in action_keywords:
+                if keyword.lower() in line_lower and keyword not in found_actions:
+                    found_actions.append(keyword)
+        
+        # Создаем действия
+        for action_name in found_actions[:5]:  # Максимум 5 действий
+            actions.append({
+                "action_id": f"a{action_counter:05d}",
+                "action_name": f"{action_name}",
+                "action_links": {"manual": "", "API": "", "UI": ""}
+            })
+            action_counter += 1
+        
+        # Если не нашли действий, создаем тестовое
+        if not actions:
+            actions = [{
+                "action_id": "a00001",
+                "action_name": "Регистрация пользователя",
+                "action_links": {"manual": "", "API": "", "UI": ""}
+            }]
+        
+        # Создаем объекты на основе текста
+        object_keywords = ['пользователь', 'профиль', 'система', 'база данных', 
+                         'рецепт', 'продукт', 'план', 'список', 'календарь',
+                         'приложение', 'сервер', 'клиент', 'интерфейс']
+        
+        found_objects = []
+        for line in lines:
+            line_lower = line.lower()
+            for obj_keyword in object_keywords:
+                if obj_keyword in line_lower and obj_keyword not in found_objects:
+                    found_objects.append(obj_keyword)
+        
+        # Создаем объекты
+        for obj_name in found_objects[:3]:  # Максимум 3 объекта
+            objects.append({
+                "object_id": f"o{object_counter:05d}",
+                "object_name": obj_name.capitalize(),
+                "resource_state": [
+                    {"state_id": "s00001", "state_name": "неактивен"},
+                    {"state_id": "s00002", "state_name": "активен"}
+                ]
+            })
+            object_counter += 1
+        
+        # Если не нашли объектов, создаем тестовые
+        if not objects:
+            objects = [
+                {
+                    "object_id": "o00001",
+                    "object_name": "Пользователь",
+                    "resource_state": [
+                        {"state_id": "s00001", "state_name": "неактивен"},
+                        {"state_id": "s00002", "state_name": "активен"}
+                    ]
+                }
+            ]
+        
+        # Создаем связи между действиями и состояниями объектов
+        for action in actions:
+            for obj in objects:
+                if obj["resource_state"]:
+                    connections.append({
+                        "connection_out": f"{obj['object_id']}s00001",
+                        "connection_in": action["action_id"],
+                        "connection_label": "инициирует"
+                    })
+                    connections.append({
+                        "connection_out": action["action_id"],
+                        "connection_in": f"{obj['object_id']}s00002",
+                        "connection_label": "активирует"
+                    })
+        
+        return {
+            "model_actions": actions,
+            "model_objects": objects,
+            "model_connections": connections
+        }
 
 def run_server(port=5001):
     """Запуск тестового сервера"""
