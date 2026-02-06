@@ -136,15 +136,82 @@ document.getElementById('addLinkButton').addEventListener('click', () => {
     selectionOrder = [];
 });
 
+// Счетчики для генерации ID
+let actionCounter = 1;
+let objectCounter = 1;
+let stateCounter = 1;
+
+// Функция для генерации ID действий
+generateActionId() {
+    return `a${actionCounter.toString().padStart(5, '0')}`;
+}
+
+// Функция для генерации ID объектов
+generateObjectId() {
+    return `o${objectCounter.toString().padStart(5, '0')}`;
+}
+
+// Функция для генерации ID состояний
+generateStateId() {
+    return `s${stateCounter.toString().padStart(5, '0')}`;
+}
+
 // Остальные функции
 document.getElementById('addActionButton').addEventListener('click', () => {
-    const name = prompt("Имя действия:");
-    if (name) cy.add({ group: 'nodes', data: { id: name, label: name, type: 'action' }, position: { x: 100, y: 100 } });
+    const actionName = prompt("Имя действия:");
+    if (!actionName) return;
+
+    const actionId = `a${actionCounter.toString().padStart(5, '0')}`;
+    actionCounter++;
+
+    cy.add({
+        group: 'nodes',
+        data: {
+            id: actionId,
+            label: actionName,
+            type: 'action',
+            original_name: actionName
+        },
+        position: { x: 100, y: 100 }
+    });
+
+    console.log(`➕ Добавлено действие: ${actionId} (${actionName})`);
 });
 
+// Новая функция для добавления объекта с состоянием
 document.getElementById('addStateButton').addEventListener('click', () => {
-    const name = prompt("Имя объекта:");
-    if (name) cy.add({ group: 'nodes', data: { id: name, label: name, type: 'state' }, position: { x: 100, y: 100 } });
+    // Запрашиваем имя объекта
+    const objectName = prompt("Имя объекта:");
+    if (!objectName) return;
+
+    // Запрашиваем состояние
+    const stateName = prompt("Состояние объекта:", "неактивен");
+    if (!stateName) return;
+
+    // Генерируем ID
+    const objectId = `o${objectCounter.toString().padStart(5, '0')}`;
+    const stateId = `s${stateCounter.toString().padStart(5, '0')}`;
+    const fullStateId = `${objectId}${stateId}`;
+
+    objectCounter++;
+    stateCounter++;
+
+    // Создаем узел "объект+состояние"
+    cy.add({
+        group: 'nodes',
+        data: {
+            id: fullStateId,
+            label: `${objectName}: ${stateName}`,
+            type: 'state',
+            object_id: objectId,
+            object_name: objectName,
+            state_id: stateId,
+            state_name: stateName
+        },
+        position: { x: 100, y: 200 }
+    });
+
+    console.log(`➕ Добавлен объект+состояние: ${objectId} (${objectName}) - ${stateId} (${stateName})`);
 });
 
 document.getElementById('saveButton').addEventListener('click', () => {
@@ -155,6 +222,140 @@ document.getElementById('saveButton').addEventListener('click', () => {
         model_objects: [],
         model_connections: []
     };
+
+    // 1. Сохраняем действия - генерируем правильные ID
+    const actionNodes = cy.nodes('[type="action"]');
+    let actionIdCounter = 1;
+    const actionIdMap = new Map(); // старый ID -> новый правильный ID
+
+    actionNodes.forEach(node => {
+        const oldId = node.id();
+        const newId = `a${actionIdCounter.toString().padStart(5, '0')}`;
+        actionIdCounter++;
+
+        actionIdMap.set(oldId, newId);
+
+        output.model_actions.push({
+            action_id: newId,
+            action_name: node.data('label') || node.data('original_name') || `Действие ${newId}`,
+            action_links: {
+                manual: "",
+                API: "",
+                UI: ""
+            }
+        });
+    });
+
+    // 2. Сохраняем объекты и их состояния
+    const stateNodes = cy.nodes('[type="state"]');
+    let objectIdCounter = 1;
+    let stateIdCounter = 1;
+    const objectStateMap = new Map(); // object_id -> {object_name, states: []}
+    const stateIdMap = new Map(); // старый ID состояния -> новый составной ID
+
+    stateNodes.forEach(stateNode => {
+        const oldId = stateNode.id();
+        const label = stateNode.data('label') || `Состояние ${oldId}`;
+
+        // Извлекаем или парсим данные
+        let objectName = stateNode.data('object_name');
+        let stateName = stateNode.data('state_name');
+
+        if (!objectName || !stateName) {
+            // Парсим из label: "Объект: Состояние"
+            if (label.includes(':')) {
+                const parts = label.split(':');
+                objectName = parts[0].trim();
+                stateName = parts[1].trim();
+            } else {
+                objectName = label;
+                stateName = "состояние";
+            }
+        }
+
+        // Генерируем правильные ID
+        const objectId = `o${objectIdCounter.toString().padStart(5, '0')}`;
+        const stateId = `s${stateIdCounter.toString().padStart(5, '0')}`;
+        const fullStateId = `${objectId}${stateId}`;
+
+        objectIdCounter++;
+        stateIdCounter++;
+
+        stateIdMap.set(oldId, fullStateId);
+
+        // Добавляем в карту объектов
+        if (!objectStateMap.has(objectId)) {
+            objectStateMap.set(objectId, {
+                object_id: objectId,
+                object_name: objectName,
+                resource_state: []
+            });
+        }
+
+        const obj = objectStateMap.get(objectId);
+        obj.resource_state.push({
+            state_id: stateId,
+            state_name: stateName
+        });
+    });
+
+    // Сохраняем объекты
+    objectStateMap.forEach(obj => {
+        output.model_objects.push({
+            object_id: obj.object_id,
+            object_name: obj.object_name,
+            resource_state: obj.resource_state,
+            object_links: {
+                manual: "",
+                API: "",
+                UI: ""
+            }
+        });
+    });
+
+    // 3. Сохраняем связи - используем правильные ID
+    const edges = cy.edges();
+
+    edges.forEach(edge => {
+        let sourceId = edge.source().id();
+        let targetId = edge.target().id();
+
+        // Заменяем ID действий
+        if (actionIdMap.has(sourceId)) {
+            sourceId = actionIdMap.get(sourceId);
+        }
+        if (actionIdMap.has(targetId)) {
+            targetId = actionIdMap.get(targetId);
+        }
+
+        // Заменяем ID состояний
+        if (stateIdMap.has(sourceId)) {
+            sourceId = stateIdMap.get(sourceId);
+        }
+        if (stateIdMap.has(targetId)) {
+            targetId = stateIdMap.get(targetId);
+        }
+
+        // Для узлов состояния проверяем, что connection_in - это состояние
+        const targetNode = edge.target();
+        if (targetNode.data('type') === 'state') {
+            // Находим родительский объект для этого состояния
+            objectStateMap.forEach((obj, objId) => {
+                const state = obj.resource_state.find(s =>
+                    `${objId}${s.state_id}` === targetId
+                );
+                if (state) {
+                    // connection_in должно быть полным ID состояния
+                    targetId = `${objId}${state.state_id}`;
+                }
+            });
+        }
+
+        output.model_connections.push({
+            connection_out: sourceId,
+            connection_in: targetId
+        });
+    });
 
     // 1. Сохраняем действия - используем реальные ID узлов
     const actionNodes = cy.nodes('[type="action"]');
