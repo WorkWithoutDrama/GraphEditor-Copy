@@ -329,28 +329,144 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
             }
     
     def parse_llm_response(self, response):
-        """Парсит и валидирует ответ LLM"""
+        """Парсит и валидирует ответ LLM, преобразуя в правильный формат"""
         try:
             # Ищем JSON в ответе
             json_start = response.find('{')
             json_end = response.rfind('}') + 1
             
             if json_start == -1 or json_end == 0:
+                print("❌ Не найден JSON в ответе LLM")
+                print(f"Ответ: {response[:500]}...")
                 return None
             
             json_str = response[json_start:json_end]
-            model = json.loads(json_str)
+            llm_model = json.loads(json_str)
+            
+            print(f"🔍 Парсинг ответа LLM: найдено {len(llm_model.get('model_actions', []))} действий")
+            
+            # Преобразуем формат LLM в наш формат
+            model = self.convert_llm_format(llm_model)
             
             # Базовая валидация
             if not all(key in model for key in ["model_actions", "model_objects", "model_connections"]):
+                print(f"❌ Неполная структура после преобразования: {list(model.keys())}")
                 return None
+            
+            print(f"✅ JSON преобразован: {len(model['model_actions'])} действий, {len(model['model_objects'])} объектов, {len(model['model_connections'])} связей")
             
             return model
             
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"❌ Ошибка парсинга JSON: {e}")
+            print(f"Ответ: {response[:500]}...")
             return None
-        except Exception:
+        except Exception as e:
+            print(f"❌ Ошибка при парсинге: {e}")
+            import traceback
+            traceback.print_exc()
             return None
+    
+    def convert_llm_format(self, llm_model):
+        """Преобразует формат LLM в наш формат"""
+        model = {
+            "model_actions": [],
+            "model_objects": [],
+            "model_connections": []
+        }
+        
+        # 1. Преобразуем действия
+        if "model_actions" in llm_model:
+            for i, action in enumerate(llm_model["model_actions"]):
+                # LLM может использовать разные ключи
+                action_id = action.get("id") or action.get("action_id") or f"a{i+1:05d}"
+                action_name = action.get("name") or action.get("action_name") or f"Действие {i+1}"
+                
+                # Если ID не в правильном формате, исправляем
+                if not action_id.startswith('a'):
+                    action_id = f"a{i+1:05d}"
+                
+                model["model_actions"].append({
+                    "action_id": action_id,
+                    "action_name": action_name,
+                    "action_links": {
+                        "manual": "",
+                        "API": "",
+                        "UI": ""
+                    }
+                })
+        
+        # 2. Преобразуем объекты
+        if "model_objects" in llm_model:
+            for i, obj in enumerate(llm_model["model_objects"]):
+                # LLM может использовать разные ключи
+                object_id = obj.get("id") or obj.get("object_id") or f"o{i+1:05d}"
+                object_name = obj.get("type") or obj.get("object_name") or obj.get("name") or f"Объект {i+1}"
+                
+                # Если ID не в правильном формате, исправляем
+                if not object_id.startswith('o'):
+                    object_id = f"o{i+1:05d}"
+                
+                # Преобразуем состояния
+                resource_state = []
+                states = obj.get("states") or obj.get("resource_state") or []
+                
+                if isinstance(states, list):
+                    for j, state in enumerate(states):
+                        if isinstance(state, dict):
+                            # Уже словарь с state_id и state_name
+                            state_id = state.get("state_id") or f"s{j+1:05d}"
+                            state_name = state.get("state_name") or state.get("name") or f"состояние {j+1}"
+                        else:
+                            # Просто строка с названием состояния
+                            state_id = f"s{j+1:05d}"
+                            state_name = str(state)
+                        
+                        resource_state.append({
+                            "state_id": state_id,
+                            "state_name": state_name
+                        })
+                
+                # Если нет состояний, добавляем дефолтные
+                if not resource_state:
+                    resource_state = [
+                        {"state_id": "s00001", "state_name": "неактивен"},
+                        {"state_id": "s00002", "state_name": "активен"}
+                    ]
+                
+                model["model_objects"].append({
+                    "object_id": object_id,
+                    "object_name": object_name,
+                    "resource_state": resource_state
+                })
+        
+        # 3. Преобразуем связи
+        if "model_connections" in llm_model:
+            for i, conn in enumerate(llm_model["model_connections"]):
+                # LLM может использовать разные ключи
+                connection_out = conn.get("connection_out") or conn.get("from") or conn.get("source")
+                connection_in = conn.get("connection_in") or conn.get("to") or conn.get("target")
+                
+                if connection_out and connection_in:
+                    # Исправляем ID если нужно
+                    if connection_out.startswith('o') and 's' in connection_out and len(connection_out) > 6:
+                        # Уже составной ID: o00001s00001
+                        pass
+                    elif connection_out.startswith('o') and len(connection_out) == 6:
+                        # Только object_id, добавляем state_id
+                        connection_out = f"{connection_out}s00001"
+                    
+                    if connection_in.startswith('a') and len(connection_in) == 6:
+                        # Действие в правильном формате
+                        pass
+                    
+                    model["model_connections"].append({
+                        "connection_out": connection_out,
+                        "connection_in": connection_in,
+                        "connection_label": conn.get("name") or conn.get("label") or "связь"
+                    })
+        
+        return model
     
     def simple_text_analysis(self, text):
         """Упрощенный анализ текста (используется если LLM недоступен)"""

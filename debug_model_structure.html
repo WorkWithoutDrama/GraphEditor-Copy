@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отладка структуры модели</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+        button { padding: 10px 20px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Отладка структуры модели</h1>
+    
+    <div class="section">
+        <h3>1. Генерация тестовой модели</h3>
+        <button onclick="generateTestModel()">Сгенерировать тестовую модель</button>
+        <div id="testModel"></div>
+    </div>
+    
+    <div class="section">
+        <h3>2. Проверка структуры модели</h3>
+        <button onclick="checkModelStructure()">Проверить структуру</button>
+        <div id="structureCheck"></div>
+    </div>
+    
+    <div class="section">
+        <h3>3. Создание узлов и связей</h3>
+        <button onclick="createNodesAndEdges()">Создать узлы и связи</button>
+        <div id="nodesEdgesResult"></div>
+    </div>
+    
+    <script>
+        let currentModel = null;
+        
+        function generateTestModel() {
+            // Создаем тестовую модель в правильном формате
+            currentModel = {
+                model_actions: [
+                    {
+                        action_id: "a00001",
+                        action_name: "Регистрация пользователя",
+                        action_links: { manual: "", API: "", UI: "" }
+                    },
+                    {
+                        action_id: "a00002", 
+                        action_name: "Авторизация пользователя",
+                        action_links: { manual: "", API: "", UI: "" }
+                    }
+                ],
+                model_objects: [
+                    {
+                        object_id: "o00001",
+                        object_name: "Пользователь",
+                        resource_state: [
+                            { state_id: "s00001", state_name: "незарегистрирован" },
+                            { state_id: "s00002", state_name: "зарегистрирован" }
+                        ]
+                    },
+                    {
+                        object_id: "o00002",
+                        object_name: "Система",
+                        resource_state: [
+                            { state_id: "s00003", state_name: "ожидает" },
+                            { state_id: "s00004", state_name: "обработано" }
+                        ]
+                    }
+                ],
+                model_connections: [
+                    {
+                        connection_out: "o00001s00001",
+                        connection_in: "a00001",
+                        connection_label: "инициирует регистрацию"
+                    },
+                    {
+                        connection_out: "a00001",
+                        connection_in: "o00001s00002",
+                        connection_label: "создает пользователя"
+                    },
+                    {
+                        connection_out: "o00001s00002",
+                        connection_in: "a00002",
+                        connection_label: "запрашивает авторизацию"
+                    },
+                    {
+                        connection_out: "a00002",
+                        connection_in: "o00002s00004",
+                        connection_label: "авторизует в системе"
+                    }
+                ]
+            };
+            
+            document.getElementById('testModel').innerHTML = `
+                <div class="success">
+                    <p>✅ Тестовая модель создана</p>
+                    <button onclick="showModel()">Показать модель</button>
+                    <div id="modelDetails" style="display: none;">
+                        <pre>${JSON.stringify(currentModel, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showModel() {
+            const details = document.getElementById('modelDetails');
+            details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function checkModelStructure() {
+            if (!currentModel) {
+                document.getElementById('structureCheck').innerHTML = `
+                    <div class="error">
+                        <p>❌ Сначала создайте тестовую модель</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const checks = [];
+            
+            // Проверяем действия
+            if (!currentModel.model_actions || !Array.isArray(currentModel.model_actions)) {
+                checks.push("❌ model_actions отсутствует или не массив");
+            } else {
+                currentModel.model_actions.forEach((action, i) => {
+                    if (!action.action_id) checks.push(`❌ Действие ${i}: нет action_id`);
+                    if (!action.action_name) checks.push(`❌ Действие ${i}: нет action_name`);
+                    if (!/^a\d{5}$/.test(action.action_id)) checks.push(`❌ Действие ${i}: неверный формат action_id: ${action.action_id}`);
+                });
+            }
+            
+            // Проверяем объекты
+            if (!currentModel.model_objects || !Array.isArray(currentModel.model_objects)) {
+                checks.push("❌ model_objects отсутствует или не массив");
+            } else {
+                currentModel.model_objects.forEach((obj, i) => {
+                    if (!obj.object_id) checks.push(`❌ Объект ${i}: нет object_id`);
+                    if (!obj.object_name) checks.push(`❌ Объект ${i}: нет object_name`);
+                    if (!/^o\d{5}$/.test(obj.object_id)) checks.push(`❌ Объект ${i}: неверный формат object_id: ${obj.object_id}`);
+                    
+                    if (!obj.resource_state || !Array.isArray(obj.resource_state)) {
+                        checks.push(`❌ Объект ${i}: нет resource_state или не массив`);
+                    } else {
+                        obj.resource_state.forEach((state, j) => {
+                            if (!state.state_id) checks.push(`❌ Объект ${i}, состояние ${j}: нет state_id`);
+                            if (!state.state_name) checks.push(`❌ Объект ${i}, состояние ${j}: нет state_name`);
+                            if (!/^s\d{5}$/.test(state.state_id)) checks.push(`❌ Объект ${i}, состояние ${j}: неверный формат state_id: ${state.state_id}`);
+                        });
+                    }
+                });
+            }
+            
+            // Проверяем связи
+            if (!currentModel.model_connections || !Array.isArray(currentModel.model_connections)) {
+                checks.push("❌ model_connections отсутствует или не массив");
+            } else {
+                currentModel.model_connections.forEach((conn, i) => {
+                    if (!conn.connection_out) checks.push(`❌ Связь ${i}: нет connection_out`);
+                    if (!conn.connection_in) checks.push(`❌ Связь ${i}: нет connection_in`);
+                });
+            }
+            
+            // Проверяем соответствие ID
+            const actionIds = new Set(currentModel.model_actions?.map(a => a.action_id) || []);
+            const objectIds = new Set(currentModel.model_objects?.map(o => o.object_id) || []);
+            
+            currentModel.model_connections?.forEach((conn, i) => {
+                // Проверяем connection_out
+                if (conn.connection_out.startsWith('o') && conn.connection_out.includes('s')) {
+                    // Это составной ID состояния
+                    const sIndex = conn.connection_out.indexOf('s');
+                    const objectId = conn.connection_out.substring(0, sIndex);
+                    const stateId = conn.connection_out.substring(sIndex);
+                    
+                    if (!objectIds.has(objectId)) {
+                        checks.push(`❌ Связь ${i}: объект ${objectId} не существует`);
+                    }
+                } else if (conn.connection_out.startsWith('a')) {
+                    // Это действие
+                    if (!actionIds.has(conn.connection_out)) {
+                        checks.push(`❌ Связь ${i}: действие ${conn.connection_out} не существует`);
+                    }
+                }
+                
+                // Проверяем connection_in
+                if (conn.connection_in.startsWith('o') && conn.connection_in.includes('s')) {
+                    const sIndex = conn.connection_in.indexOf('s');
+                    const objectId = conn.connection_in.substring(0, sIndex);
+                    const stateId = conn.connection_in.substring(sIndex);
+                    
+                    if (!objectIds.has(objectId)) {
+                        checks.push(`❌ Связь ${i}: объект ${objectId} не существует`);
+                    }
+                } else if (conn.connection_in.startsWith('a')) {
+                    if (!actionIds.has(conn.connection_in)) {
+                        checks.push(`❌ Связь ${i}: действие ${conn.connection_in} не существует`);
+                    }
+                }
+            });
+            
+            let html = '<h4>Результаты проверки:</h4>';
+            if (checks.length === 0) {
+                html += '<div class="success">✅ Все проверки пройдены!</div>';
+            } else {
+                html += '<div class="error"><ul>';
+                checks.forEach(check => {
+                    html += `<li>${check}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            document.getElementById('structureCheck').innerHTML = html;
+        }
+        
+        function createNodesAndEdges() {
+            if (!currentModel) {
+                document.getElementById('nodesEdgesResult').innerHTML = `
+                    <div class="error">
+                        <p>❌ Сначала создайте тестовую модель</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const nodes = [];
+            const edges = [];
+            const ids = new Set();
+            
+            // Функция для добавления узлов
+            const addNode = (id, label, type) => {
+                if (!ids.has(id)) {
+                    nodes.push({ data: { id, label: label || id, type } });
+                    ids.add(id);
+                    console.log(`➕ Добавлен узел: ${id} (${label})`);
+                }
+            };
+            
+            // 1. Добавляем действия
+            currentModel.model_actions.forEach(action => {
+                if (action.action_id && action.action_name) {
+                    addNode(action.action_id, action.action_name, 'action');
+                }
+            });
+            
+            // 2. Добавляем объекты и состояния
+            currentModel.model_objects.forEach(obj => {
+                if (obj.object_id && obj.object_name && obj.resource_state) {
+                    obj.resource_state.forEach(state => {
+                        if (state.state_id && state.state_name) {
+                            const stateId = `${obj.object_id}${state.state_id}`;
+                            const stateLabel = `${obj.object_name}: ${state.state_name}`;
+                            addNode(stateId, stateLabel, 'state');
+                        }
+                    });
+                }
+            });
+            
+            // 3. Добавляем связи
+            currentModel.model_connections.forEach(conn => {
+                if (conn.connection_out && conn.connection_in) {
+                    // Проверяем существование узлов
+                    const sourceExists = ids.has(conn.connection_out);
+                    const targetExists = ids.has(conn.connection_in);
+                    
+                    if (sourceExists && targetExists) {
+                        edges.push({
+                            data: {
+                                id: `${conn.connection_out}->${conn.connection_in}`,
+                                source: conn.connection_out,
+                                target: conn.connection_in,
+                                label: conn.connection_label || 'связь'
+                            }
+                        });
+                        console.log(`✅ Добавлена связь: ${conn.connection_out} -> ${conn.connection_in}`);
+                    } else {
+                        console.warn(`⚠️  Пропущена связь: ${conn.connection_out} -> ${conn.connection_in}`);
+                        console.warn(`   source существует: ${sourceExists}, target существует: ${targetExists}`);
+                        
+                        // Попробуем создать отсутствующий узел
+                        if (!sourceExists && conn.connection_out.startsWith('o') && conn.connection_out.includes('s')) {
+                            const sIndex = conn.connection_out.indexOf('s');
+                            const objectId = conn.connection_out.substring(0, sIndex);
+                            const stateId = conn.connection_out.substring(sIndex);
+                            
+                            // Ищем объект
+                            const obj = currentModel.model_objects.find(o => o.object_id === objectId);
+                            if (obj) {
+                                const stateLabel = `${obj.object_name}: состояние ${stateId.substring(1)}`;
+                                addNode(conn.connection_out, stateLabel, 'state');
+                                console.log(`➕ Создан отсутствующий узел: ${conn.connection_out}`);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            document.getElementById('nodesEdgesResult').innerHTML = `
+                <div class="success">
+                    <p>✅ Узлы и связи созданы</p>
+                    <p>Узлы: ${nodes.length}</p>
+                    <p>Связи: ${edges.length}</p>
+                    <p>Проверьте консоль браузера для деталей</p>
+                    <button onclick="showNodesEdges()">Показать структуру</button>
+                    <div id="nodesEdgesDetails" style="display: none;">
+                        <h4>Узлы (${nodes.length}):</h4>
+                        <pre>${JSON.stringify(nodes.map(n => n.data), null, 2)}</pre>
+                        <h4>Связи (${edges.length}):</h4>
+                        <pre>${JSON.stringify(edges.map(e => e.data), null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+            
+            // Выводим в консоль
+            console.log('🎯 Тестовая структура:');
+            console.log('Узлы:', nodes.map(n => n.data));
+            console.log('Связи:', edges.map(e => e.data));
+        }
+        
+        function showNodesEdges() {
+            const details = document.getElementById('nodesEdgesDetails');
+            details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Автоматически создаем тестовую модель при загрузке
+        window.onload = function() {
+            setTimeout(generateTestModel, 500);
+        };
+    </script>
+</body>
+</html>
