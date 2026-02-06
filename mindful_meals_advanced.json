@@ -1,0 +1,534 @@
+{
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_name": "Регистрация пользователя",
+      "action_links": {
+        "manual": "инструкция по регистрация пользователя",
+        "API": "/api/регистрация-пользователя",
+        "UI": "/регистрация-пользователя"
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_name": "Авторизация пользователя",
+      "action_links": {
+        "manual": "инструкция по авторизация пользователя",
+        "API": "/api/авторизация-пользователя",
+        "UI": "/авторизация-пользователя"
+      }
+    },
+    {
+      "action_id": "a00003",
+      "action_name": "Восстановление пароля",
+      "action_links": {
+        "manual": "инструкция по восстановление пароля",
+        "API": "/api/восстановление-пароля",
+        "UI": "/восстановление-пароля"
+      }
+    },
+    {
+      "action_id": "a00004",
+      "action_name": "Настройка профиля пользователя",
+      "action_links": {
+        "manual": "инструкция по настройка профиля пользователя",
+        "API": "/api/настройка-профиля-пользователя",
+        "UI": "/настройка-профиля-пользователя"
+      }
+    },
+    {
+      "action_id": "a00005",
+      "action_name": "Ввод личных данных",
+      "action_links": {
+        "manual": "инструкция по ввод личных данных",
+        "API": "/api/ввод-личных-данных",
+        "UI": "/ввод-личных-данных"
+      }
+    },
+    {
+      "action_id": "a00006",
+      "action_name": "Расчет нормы калорий",
+      "action_links": {
+        "manual": "инструкция по расчет нормы калорий",
+        "API": "/api/расчет-нормы-калорий",
+        "UI": "/расчет-нормы-калорий"
+      }
+    },
+    {
+      "action_id": "a00007",
+      "action_name": "Отображение календаря",
+      "action_links": {
+        "manual": "инструкция по отображение календаря",
+        "API": "/api/отображение-календаря",
+        "UI": "/отображение-календаря"
+      }
+    },
+    {
+      "action_id": "a00008",
+      "action_name": "Управление приемами пищи",
+      "action_links": {
+        "manual": "инструкция по управление приемами пищи",
+        "API": "/api/управление-приемами-пищи",
+        "UI": "/управление-приемами-пищи"
+      }
+    },
+    {
+      "action_id": "a00009",
+      "action_name": "Поиск продуктов",
+      "action_links": {
+        "manual": "инструкция по поиск продуктов",
+        "API": "/api/поиск-продуктов",
+        "UI": "/поиск-продуктов"
+      }
+    },
+    {
+      "action_id": "a00010",
+      "action_name": "Отображение статистики",
+      "action_links": {
+        "manual": "инструкция по отображение статистики",
+        "API": "/api/отображение-статистики",
+        "UI": "/отображение-статистики"
+      }
+    },
+    {
+      "action_id": "a00011",
+      "action_name": "Генерация плана питания",
+      "action_links": {
+        "manual": "инструкция по генерация плана питания",
+        "API": "/api/генерация-плана-питания",
+        "UI": "/генерация-плана-питания"
+      }
+    },
+    {
+      "action_id": "a00012",
+      "action_name": "Поиск рецептов",
+      "action_links": {
+        "manual": "инструкция по поиск рецептов",
+        "API": "/api/поиск-рецептов",
+        "UI": "/поиск-рецептов"
+      }
+    },
+    {
+      "action_id": "a00013",
+      "action_name": "Добавление рецептов",
+      "action_links": {
+        "manual": "инструкция по добавление рецептов",
+        "API": "/api/добавление-рецептов",
+        "UI": "/добавление-рецептов"
+      }
+    },
+    {
+      "action_id": "a00014",
+      "action_name": "Просмотр информации о рецепте",
+      "action_links": {
+        "manual": "инструкция по просмотр информации о рецепте",
+        "API": "/api/просмотр-информации-о-рецепте",
+        "UI": "/просмотр-информации-о-рецепте"
+      }
+    },
+    {
+      "action_id": "a00015",
+      "action_name": "Генерация списка покупок",
+      "action_links": {
+        "manual": "инструкция по генерация списка покупок",
+        "API": "/api/генерация-списка-покупок",
+        "UI": "/генерация-списка-покупок"
+      }
+    },
+    {
+      "action_id": "a00016",
+      "action_name": "Редактирование списка покупок",
+      "action_links": {
+        "manual": "инструкция по редактирование списка покупок",
+        "API": "/api/редактирование-списка-покупок",
+        "UI": "/редактирование-списка-покупок"
+      }
+    },
+    {
+      "action_id": "a00017",
+      "action_name": "Хранение данных",
+      "action_links": {
+        "manual": "инструкция по хранение данных",
+        "API": "/api/хранение-данных",
+        "UI": "/хранение-данных"
+      }
+    },
+    {
+      "action_id": "a00018",
+      "action_name": "Разработка API",
+      "action_links": {
+        "manual": "инструкция по разработка api",
+        "API": "/api/разработка-api",
+        "UI": "/разработка-api"
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00001",
+      "object_name": "Проект",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "определен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00002",
+      "object_name": "Пользователь",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "незарегистрирован"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "зарегистрирован"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "авторизован"
+        },
+        {
+          "state_id": "s00004",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00003",
+      "object_name": "Email",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не подтвержден"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "подтвержден"
+        }
+      ]
+    },
+    {
+      "object_id": "o00004",
+      "object_name": "Пароль",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не установлен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "установлен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00005",
+      "object_name": "Сессия",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не активна"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активна"
+        }
+      ]
+    },
+    {
+      "object_id": "o00006",
+      "object_name": "Система",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "обработано"
+        }
+      ]
+    },
+    {
+      "object_id": "o00007",
+      "object_name": "Профиль",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не настроен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "настроен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00008",
+      "object_name": "Данные",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "расчитаны"
+        }
+      ]
+    },
+    {
+      "object_id": "o00009",
+      "object_name": "Календарь",
+      "resource_state": []
+    },
+    {
+      "object_id": "o00010",
+      "object_name": "Прием пищи",
+      "resource_state": []
+    },
+    {
+      "object_id": "o00011",
+      "object_name": "Блюдо",
+      "resource_state": []
+    },
+    {
+      "object_id": "o00012",
+      "object_name": "Продукт",
+      "resource_state": []
+    },
+    {
+      "object_id": "o00013",
+      "object_name": "План питания",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "сгенерирован"
+        }
+      ]
+    },
+    {
+      "object_id": "o00014",
+      "object_name": "Рецепт",
+      "resource_state": []
+    },
+    {
+      "object_id": "o00015",
+      "object_name": "Ингредиент",
+      "resource_state": []
+    },
+    {
+      "object_id": "o00016",
+      "object_name": "Список покупок",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "сгенерирован"
+        }
+      ]
+    },
+    {
+      "object_id": "o00017",
+      "object_name": "База данных",
+      "resource_state": []
+    },
+    {
+      "object_id": "o00018",
+      "object_name": "API",
+      "resource_state": []
+    },
+    {
+      "object_id": "o00019",
+      "object_name": "Интерфейс",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "спроектирован"
+        }
+      ]
+    },
+    {
+      "object_id": "o00020",
+      "object_name": "Тестирование",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "выполнено"
+        }
+      ]
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_out": "o00002s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00003s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00004s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "a00001",
+      "connection_in": "o00002s00002"
+    },
+    {
+      "connection_out": "a00001",
+      "connection_in": "o00003s00002"
+    },
+    {
+      "connection_out": "a00001",
+      "connection_in": "o00004s00002"
+    },
+    {
+      "connection_out": "o00002s00002",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00005s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "a00002",
+      "connection_in": "o00002s00003"
+    },
+    {
+      "connection_out": "a00002",
+      "connection_in": "o00005s00002"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "a00003",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00003",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00007s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "a00004",
+      "connection_in": "o00007s00002"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "a00005",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00007s00002",
+      "connection_in": "a00006"
+    },
+    {
+      "connection_out": "a00006",
+      "connection_in": "o00008s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00007"
+    },
+    {
+      "connection_out": "a00007",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00008"
+    },
+    {
+      "connection_out": "a00008",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00009"
+    },
+    {
+      "connection_out": "a00009",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00010"
+    },
+    {
+      "connection_out": "a00010",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00003",
+      "connection_in": "a00011"
+    },
+    {
+      "connection_out": "o00007s00002",
+      "connection_in": "a00011"
+    },
+    {
+      "connection_out": "a00011",
+      "connection_in": "o00013s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00012"
+    },
+    {
+      "connection_out": "a00012",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00013"
+    },
+    {
+      "connection_out": "a00013",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00014"
+    },
+    {
+      "connection_out": "a00014",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00013s00001",
+      "connection_in": "a00015"
+    },
+    {
+      "connection_out": "a00015",
+      "connection_in": "o00016s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00016"
+    },
+    {
+      "connection_out": "a00016",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00017"
+    },
+    {
+      "connection_out": "a00017",
+      "connection_in": "o00006s00001"
+    },
+    {
+      "connection_out": "o00002s00004",
+      "connection_in": "a00018"
+    },
+    {
+      "connection_out": "a00018",
+      "connection_in": "o00006s00001"
+    }
+  ]
+}

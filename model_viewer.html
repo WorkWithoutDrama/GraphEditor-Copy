@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Модель процессов: Mindful Meals</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #4CAF50;
+        }
+        .stat-card h3 {
+            margin: 0;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .stat-card .number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 10px 0;
+        }
+        .graph-container {
+            margin: 30px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fafafa;
+        }
+        .details {
+            margin-top: 30px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            color: #333;
+            padding: 10px;
+            background-color: #e8f5e8;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .connection {
+            font-family: monospace;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Модель процессов: Mindful Meals</h1>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Действий</h3>
+                <div class="number">18</div>
+                <p>Процессы системы</p>
+            </div>
+            <div class="stat-card">
+                <h3>Объектов</h3>
+                <div class="number">20</div>
+                <p>Сущности системы</p>
+            </div>
+            <div class="stat-card">
+                <h3>Состояний</h3>
+                <div class="number">19</div>
+                <p>Статусы объектов</p>
+            </div>
+            <div class="stat-card">
+                <h3>Связей</h3>
+                <div class="number">44</div>
+                <p>Взаимодействия</p>
+            </div>
+        </div>
+        
+        <div class="graph-container">
+            <h2>Визуализация модели</h2>
+            <div class="mermaid">
+graph LR
+
+  classDef action fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+  classDef state fill:#fff3e0,stroke:#e65100,stroke-width:2px,rounded
+
+  a00001["Регистрация пользователя"]
+  class a00001 action
+  a00002["Авторизация пользователя"]
+  class a00002 action
+  a00003["Восстановление пароля"]
+  class a00003 action
+  a00004["Настройка профиля пользователя"]
+  class a00004 action
+  a00005["Ввод личных данных"]
+  class a00005 action
+  a00006["Расчет нормы калорий"]
+  class a00006 action
+  a00007["Отображение календаря"]
+  class a00007 action
+  a00008["Управление приемами пищи"]
+  class a00008 action
+  a00009["Поиск продуктов"]
+  class a00009 action
+  a00010["Отображение статистики"]
+  class a00010 action
+  a00011["Генерация плана питания"]
+  class a00011 action
+  a00012["Поиск рецептов"]
+  class a00012 action
+  a00013["Добавление рецептов"]
+  class a00013 action
+  a00014["Просмотр информации о рецепте"]
+  class a00014 action
+  a00015["Генерация списка покупок"]
+  class a00015 action
+
+  o00002s00001 --> a00001
+  o00003s00001 --> a00001
+  o00004s00001 --> a00001
+  a00001 --> o00002s00002
+  a00001 --> o00003s00002
+  a00001 --> o00004s00002
+  o00002s00002 --> a00002
+  o00005s00001 --> a00002
+  a00002 --> o00002s00003
+  a00002 --> o00005s00002
+  o00002s00004 --> a00003
+  a00003 --> o00006s00001
+  o00002s00003 --> a00004
+  o00007s00001 --> a00004
+  a00004 --> o00007s00002
+  o00002s00004 --> a00005
+  a00005 --> o00006s00001
+  o00007s00002 --> a00006
+  a00006 --> o00008s00001
+  o00002s00004 --> a00007
+  a00007 --> o00006s00001
+  o00002s00004 --> a00008
+  a00008 --> o00006s00001
+  o00002s00004 --> a00009
+  a00009 --> o00006s00001
+  o00002s00004 --> a00010
+  a00010 --> o00006s00001
+  o00002s00003 --> a00011
+  o00007s00002 --> a00011
+  a00011 --> o00013s00001
+            </div>
+        </div>
+        
+        <div class="details">
+            <div class="section">
+                <h3>📋 Действия</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            <th>API</th>
+                            <th>UI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td><code>a00001</code></td>
+                            <td>Регистрация пользователя</td>
+                            <td><code>/api/регистрация-пользователя</code></td>
+                            <td><code>/регистрация-пользователя</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00002</code></td>
+                            <td>Авторизация пользователя</td>
+                            <td><code>/api/авторизация-пользователя</code></td>
+                            <td><code>/авторизация-пользователя</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00003</code></td>
+                            <td>Восстановление пароля</td>
+                            <td><code>/api/восстановление-пароля</code></td>
+                            <td><code>/восстановление-пароля</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00004</code></td>
+                            <td>Настройка профиля пользователя</td>
+                            <td><code>/api/настройка-профиля-пользователя</code></td>
+                            <td><code>/настройка-профиля-пользователя</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00005</code></td>
+                            <td>Ввод личных данных</td>
+                            <td><code>/api/ввод-личных-данных</code></td>
+                            <td><code>/ввод-личных-данных</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00006</code></td>
+                            <td>Расчет нормы калорий</td>
+                            <td><code>/api/расчет-нормы-калорий</code></td>
+                            <td><code>/расчет-нормы-калорий</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00007</code></td>
+                            <td>Отображение календаря</td>
+                            <td><code>/api/отображение-календаря</code></td>
+                            <td><code>/отображение-календаря</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00008</code></td>
+                            <td>Управление приемами пищи</td>
+                            <td><code>/api/управление-приемами-пищи</code></td>
+                            <td><code>/управление-приемами-пищи</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00009</code></td>
+                            <td>Поиск продуктов</td>
+                            <td><code>/api/поиск-продуктов</code></td>
+                            <td><code>/поиск-продуктов</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00010</code></td>
+                            <td>Отображение статистики</td>
+                            <td><code>/api/отображение-статистики</code></td>
+                            <td><code>/отображение-статистики</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00011</code></td>
+                            <td>Генерация плана питания</td>
+                            <td><code>/api/генерация-плана-питания</code></td>
+                            <td><code>/генерация-плана-питания</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00012</code></td>
+                            <td>Поиск рецептов</td>
+                            <td><code>/api/поиск-рецептов</code></td>
+                            <td><code>/поиск-рецептов</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00013</code></td>
+                            <td>Добавление рецептов</td>
+                            <td><code>/api/добавление-рецептов</code></td>
+                            <td><code>/добавление-рецептов</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00014</code></td>
+                            <td>Просмотр информации о рецепте</td>
+                            <td><code>/api/просмотр-информации-о-рецепте</code></td>
+                            <td><code>/просмотр-информации-о-рецепте</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00015</code></td>
+                            <td>Генерация списка покупок</td>
+                            <td><code>/api/генерация-списка-покупок</code></td>
+                            <td><code>/генерация-списка-покупок</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00016</code></td>
+                            <td>Редактирование списка покупок</td>
+                            <td><code>/api/редактирование-списка-покупок</code></td>
+                            <td><code>/редактирование-списка-покупок</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00017</code></td>
+                            <td>Хранение данных</td>
+                            <td><code>/api/хранение-данных</code></td>
+                            <td><code>/хранение-данных</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>a00018</code></td>
+                            <td>Разработка API</td>
+                            <td><code>/api/разработка-api</code></td>
+                            <td><code>/разработка-api</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>🏛️ Объекты и состояния</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Объект</th>
+                            <th>ID</th>
+                            <th>Состояния</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>Проект</td>
+                            <td><code>o00001</code></td>
+                            <td>определен (s00001)</td>
+                        </tr>
+                        <tr>
+                            <td>Пользователь</td>
+                            <td><code>o00002</code></td>
+                            <td>незарегистрирован (s00001)<br>зарегистрирован (s00002)<br>авторизован (s00003)<br>активен (s00004)</td>
+                        </tr>
+                        <tr>
+                            <td>Email</td>
+                            <td><code>o00003</code></td>
+                            <td>не подтвержден (s00001)<br>подтвержден (s00002)</td>
+                        </tr>
+                        <tr>
+                            <td>Пароль</td>
+                            <td><code>o00004</code></td>
+                            <td>не установлен (s00001)<br>установлен (s00002)</td>
+                        </tr>
+                        <tr>
+                            <td>Сессия</td>
+                            <td><code>o00005</code></td>
+                            <td>не активна (s00001)<br>активна (s00002)</td>
+                        </tr>
+                        <tr>
+                            <td>Система</td>
+                            <td><code>o00006</code></td>
+                            <td>обработано (s00001)</td>
+                        </tr>
+                        <tr>
+                            <td>Профиль</td>
+                            <td><code>o00007</code></td>
+                            <td>не настроен (s00001)<br>настроен (s00002)</td>
+                        </tr>
+                        <tr>
+                            <td>Данные</td>
+                            <td><code>o00008</code></td>
+                            <td>расчитаны (s00001)</td>
+                        </tr>
+                        <tr>
+                            <td>Календарь</td>
+                            <td><code>o00009</code></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Прием пищи</td>
+                            <td><code>o00010</code></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Блюдо</td>
+                            <td><code>o00011</code></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Продукт</td>
+                            <td><code>o00012</code></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>План питания</td>
+                            <td><code>o00013</code></td>
+                            <td>сгенерирован (s00001)</td>
+                        </tr>
+                        <tr>
+                            <td>Рецепт</td>
+                            <td><code>o00014</code></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Ингредиент</td>
+                            <td><code>o00015</code></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Список покупок</td>
+                            <td><code>o00016</code></td>
+                            <td>сгенерирован (s00001)</td>
+                        </tr>
+                        <tr>
+                            <td>База данных</td>
+                            <td><code>o00017</code></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>API</td>
+                            <td><code>o00018</code></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Интерфейс</td>
+                            <td><code>o00019</code></td>
+                            <td>спроектирован (s00001)</td>
+                        </tr>
+                        <tr>
+                            <td>Тестирование</td>
+                            <td><code>o00020</code></td>
+                            <td>выполнено (s00001)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>🔗 Связи</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Источник</th>
+                            <th>Направление</th>
+                            <th>Цель</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td class="connection">o00002s00001</td>
+                            <td>→</td>
+                            <td class="connection">a00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00003s00001</td>
+                            <td>→</td>
+                            <td class="connection">a00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00004s00001</td>
+                            <td>→</td>
+                            <td class="connection">a00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00001</td>
+                            <td>→</td>
+                            <td class="connection">o00002s00002</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00001</td>
+                            <td>→</td>
+                            <td class="connection">o00003s00002</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00001</td>
+                            <td>→</td>
+                            <td class="connection">o00004s00002</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00002</td>
+                            <td>→</td>
+                            <td class="connection">a00002</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00005s00001</td>
+                            <td>→</td>
+                            <td class="connection">a00002</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00002</td>
+                            <td>→</td>
+                            <td class="connection">o00002s00003</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00002</td>
+                            <td>→</td>
+                            <td class="connection">o00005s00002</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00003</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00003</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00003</td>
+                            <td>→</td>
+                            <td class="connection">a00004</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00007s00001</td>
+                            <td>→</td>
+                            <td class="connection">a00004</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00004</td>
+                            <td>→</td>
+                            <td class="connection">o00007s00002</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00005</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00005</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00007s00002</td>
+                            <td>→</td>
+                            <td class="connection">a00006</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00006</td>
+                            <td>→</td>
+                            <td class="connection">o00008s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00007</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00007</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00008</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00008</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00009</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00009</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00010</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00010</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00003</td>
+                            <td>→</td>
+                            <td class="connection">a00011</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00007s00002</td>
+                            <td>→</td>
+                            <td class="connection">a00011</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00011</td>
+                            <td>→</td>
+                            <td class="connection">o00013s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00012</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00012</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00013</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00013</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00014</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00014</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00013s00001</td>
+                            <td>→</td>
+                            <td class="connection">a00015</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00015</td>
+                            <td>→</td>
+                            <td class="connection">o00016s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00016</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00016</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00017</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00017</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">o00002s00004</td>
+                            <td>→</td>
+                            <td class="connection">a00018</td>
+                        </tr>
+                        <tr>
+                            <td class="connection">a00018</td>
+                            <td>→</td>
+                            <td class="connection">o00006s00001</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,217 @@
+{
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_name": "Регистрация пользователя",
+      "action_links": {
+        "manual": "инструкция по регистрации",
+        "API": "/api/register",
+        "UI": "/register"
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_name": "Авторизация пользователя",
+      "action_links": {
+        "manual": "инструкция по авторизации",
+        "API": "/api/login",
+        "UI": "/login"
+      }
+    },
+    {
+      "action_id": "a00003",
+      "action_name": "Настройка профиля пользователя",
+      "action_links": {
+        "manual": "инструкция по настройке профиля",
+        "API": "/api/profile/setup",
+        "UI": "/profile/setup"
+      }
+    },
+    {
+      "action_id": "a00004",
+      "action_name": "Создание плана питания",
+      "action_links": {
+        "manual": "инструкция по планированию питания",
+        "API": "/api/meal-plan",
+        "UI": "/meal-plan"
+      }
+    },
+    {
+      "action_id": "a00005",
+      "action_name": "Добавление рецепта",
+      "action_links": {
+        "manual": "инструкция по добавлению рецептов",
+        "API": "/api/recipes",
+        "UI": "/recipes/add"
+      }
+    },
+    {
+      "action_id": "a00006",
+      "action_name": "Генерация списка покупок",
+      "action_links": {
+        "manual": "инструкция по списку покупок",
+        "API": "/api/shopping-list/generate",
+        "UI": "/shopping-list"
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00001",
+      "object_name": "Пользователь",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "незарегистрирован"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "зарегистрирован"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "авторизован"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по пользователям",
+        "API": "/api/users",
+        "UI": "/profile"
+      }
+    },
+    {
+      "object_id": "o00002",
+      "object_name": "Профиль пользователя",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не настроен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "настроен"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по профилям",
+        "API": "/api/profiles",
+        "UI": "/profile"
+      }
+    },
+    {
+      "object_id": "o00003",
+      "object_name": "План питания",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не создан"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "выполнен"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по планам питания",
+        "API": "/api/meal-plans",
+        "UI": "/meal-plans"
+      }
+    },
+    {
+      "object_id": "o00004",
+      "object_name": "Рецепт",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не сохранен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "в базе данных"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по рецептам",
+        "API": "/api/recipes",
+        "UI": "/recipes"
+      }
+    },
+    {
+      "object_id": "o00005",
+      "object_name": "Список покупок",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не сгенерирован"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "выполнен"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по спискам покупок",
+        "API": "/api/shopping-lists",
+        "UI": "/shopping-lists"
+      }
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_out": "o00001s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "a00001",
+      "connection_in": "o00001s00002"
+    },
+    {
+      "connection_out": "o00001s00002",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "a00002",
+      "connection_in": "o00001s00003"
+    },
+    {
+      "connection_out": "o00001s00003",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "a00003",
+      "connection_in": "o00002s00002"
+    },
+    {
+      "connection_out": "o00001s00003",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "a00004",
+      "connection_in": "o00003s00002"
+    },
+    {
+      "connection_out": "o00001s00003",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "a00005",
+      "connection_in": "o00004s00002"
+    },
+    {
+      "connection_out": "o00003s00002",
+      "connection_in": "a00006"
+    },
+    {
+      "connection_out": "a00006",
+      "connection_in": "o00005s00002"
+    }
+  ]
+}

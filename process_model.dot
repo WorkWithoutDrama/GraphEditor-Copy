@@ -1,0 +1,102 @@
+digraph ProcessModel {
+  rankdir=LR;
+  node [fontname="Helvetica", fontsize=10];
+  edge [fontname="Helvetica", fontsize=8];
+
+  // Действия (прямоугольники)
+  a00001 [label="Регистрация пользователя", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00002 [label="Авторизация пользователя", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00003 [label="Восстановление пароля", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00004 [label="Настройка профиля пользователя", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00005 [label="Ввод личных данных", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00006 [label="Расчет нормы калорий", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00007 [label="Отображение календаря", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00008 [label="Управление приемами пищи", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00009 [label="Поиск продуктов", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00010 [label="Отображение статистики", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00011 [label="Генерация плана питания", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00012 [label="Поиск рецептов", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00013 [label="Добавление рецептов", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00014 [label="Просмотр информации о рецепте", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00015 [label="Генерация списка покупок", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00016 [label="Редактирование списка покупок", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00017 [label="Хранение данных", shape=rectangle, style=filled, fillcolor=lightblue];
+  a00018 [label="Разработка API", shape=rectangle, style=filled, fillcolor=lightblue];
+
+  // Объекты и состояния (овалы)
+  o00001s00001 [label="Проект\nопределен", shape=oval, style=filled, fillcolor=lightyellow];
+  o00002s00001 [label="Пользователь\nнезарегистрирован", shape=oval, style=filled, fillcolor=lightyellow];
+  o00002s00002 [label="Пользователь\nзарегистрирован", shape=oval, style=filled, fillcolor=lightyellow];
+  o00002s00003 [label="Пользователь\nавторизован", shape=oval, style=filled, fillcolor=lightyellow];
+  o00002s00004 [label="Пользователь\nактивен", shape=oval, style=filled, fillcolor=lightyellow];
+  o00003s00001 [label="Email\nне подтвержден", shape=oval, style=filled, fillcolor=lightyellow];
+  o00003s00002 [label="Email\nподтвержден", shape=oval, style=filled, fillcolor=lightyellow];
+  o00004s00001 [label="Пароль\nне установлен", shape=oval, style=filled, fillcolor=lightyellow];
+  o00004s00002 [label="Пароль\nустановлен", shape=oval, style=filled, fillcolor=lightyellow];
+  o00005s00001 [label="Сессия\nне активна", shape=oval, style=filled, fillcolor=lightyellow];
+  o00005s00002 [label="Сессия\nактивна", shape=oval, style=filled, fillcolor=lightyellow];
+  o00006s00001 [label="Система\nобработано", shape=oval, style=filled, fillcolor=lightyellow];
+  o00007s00001 [label="Профиль\nне настроен", shape=oval, style=filled, fillcolor=lightyellow];
+  o00007s00002 [label="Профиль\nнастроен", shape=oval, style=filled, fillcolor=lightyellow];
+  o00008s00001 [label="Данные\nрасчитаны", shape=oval, style=filled, fillcolor=lightyellow];
+  o00013s00001 [label="План питания\nсгенерирован", shape=oval, style=filled, fillcolor=lightyellow];
+  o00016s00001 [label="Список покупок\nсгенерирован", shape=oval, style=filled, fillcolor=lightyellow];
+  o00019s00001 [label="Интерфейс\nспроектирован", shape=oval, style=filled, fillcolor=lightyellow];
+  o00020s00001 [label="Тестирование\nвыполнено", shape=oval, style=filled, fillcolor=lightyellow];
+
+  // Связи между узлами
+  o00002s00001 -> a00001;
+  o00003s00001 -> a00001;
+  o00004s00001 -> a00001;
+  a00001 -> o00002s00002;
+  a00001 -> o00003s00002;
+  a00001 -> o00004s00002;
+  o00002s00002 -> a00002;
+  o00005s00001 -> a00002;
+  a00002 -> o00002s00003;
+  a00002 -> o00005s00002;
+  o00002s00004 -> a00003;
+  a00003 -> o00006s00001;
+  o00002s00003 -> a00004;
+  o00007s00001 -> a00004;
+  a00004 -> o00007s00002;
+  o00002s00004 -> a00005;
+  a00005 -> o00006s00001;
+  o00007s00002 -> a00006;
+  a00006 -> o00008s00001;
+  o00002s00004 -> a00007;
+  a00007 -> o00006s00001;
+  o00002s00004 -> a00008;
+  a00008 -> o00006s00001;
+  o00002s00004 -> a00009;
+  a00009 -> o00006s00001;
+  o00002s00004 -> a00010;
+  a00010 -> o00006s00001;
+  o00002s00003 -> a00011;
+  o00007s00002 -> a00011;
+  a00011 -> o00013s00001;
+  o00002s00004 -> a00012;
+  a00012 -> o00006s00001;
+  o00002s00004 -> a00013;
+  a00013 -> o00006s00001;
+  o00002s00004 -> a00014;
+  a00014 -> o00006s00001;
+  o00013s00001 -> a00015;
+  a00015 -> o00016s00001;
+  o00002s00004 -> a00016;
+  a00016 -> o00006s00001;
+  o00002s00004 -> a00017;
+  a00017 -> o00006s00001;
+  o00002s00004 -> a00018;
+  a00018 -> o00006s00001;
+
+  // Легенда
+  subgraph cluster_legend {
+    label="Легенда";
+    style=dashed;
+    rankdir=TB;
+    
+    legend_action [label="Действие", shape=rectangle, style=filled, fillcolor=lightblue];
+    legend_state [label="Объект+Состояние", shape=oval, style=filled, fillcolor=lightyellow];
+  }
+}

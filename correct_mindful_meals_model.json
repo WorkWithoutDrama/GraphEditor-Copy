@@ -1,0 +1,227 @@
+{
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_name": "Регистрация пользователя",
+      "action_links": {
+        "manual": "инструкция по регистрация пользователя",
+        "API": "/api/регистрация-пользователя",
+        "UI": "/регистрация-пользователя"
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_name": "Авторизация пользователя",
+      "action_links": {
+        "manual": "инструкция по авторизация пользователя",
+        "API": "/api/авторизация-пользователя",
+        "UI": "/авторизация-пользователя"
+      }
+    },
+    {
+      "action_id": "a00003",
+      "action_name": "Восстановление пароля",
+      "action_links": {
+        "manual": "инструкция по восстановление пароля",
+        "API": "/api/восстановление-пароля",
+        "UI": "/восстановление-пароля"
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00001",
+      "object_name": "API",
+      "resource_state": [],
+      "object_links": {
+        "manual": "документация по api",
+        "API": "/api/api",
+        "UI": "/api"
+      }
+    },
+    {
+      "object_id": "o00002",
+      "object_name": "План питания",
+      "resource_state": [],
+      "object_links": {
+        "manual": "документация по план питания",
+        "API": "/api/план-питания",
+        "UI": "/план-питания"
+      }
+    },
+    {
+      "object_id": "o00003",
+      "object_name": "Календарь",
+      "resource_state": [],
+      "object_links": {
+        "manual": "документация по календарь",
+        "API": "/api/календарь",
+        "UI": "/календарь"
+      }
+    },
+    {
+      "object_id": "o00004",
+      "object_name": "Прием пищи",
+      "resource_state": [],
+      "object_links": {
+        "manual": "документация по прием пищи",
+        "API": "/api/прием-пищи",
+        "UI": "/прием-пищи"
+      }
+    },
+    {
+      "object_id": "o00005",
+      "object_name": "Пользователь",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "незарегистрирован"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "зарегистрирован"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "авторизован"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по пользователь",
+        "API": "/api/пользователь",
+        "UI": "/пользователь"
+      }
+    },
+    {
+      "object_id": "o00006",
+      "object_name": "Email",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не подтвержден"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "подтвержден"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по email",
+        "API": "/api/email",
+        "UI": "/email"
+      }
+    },
+    {
+      "object_id": "o00007",
+      "object_name": "Пароль",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не установлен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "установлен"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "сброшен"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по пароль",
+        "API": "/api/пароль",
+        "UI": "/пароль"
+      }
+    },
+    {
+      "object_id": "o00008",
+      "object_name": "Сессия",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не активна"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активна"
+        }
+      ],
+      "object_links": {
+        "manual": "документация по сессия",
+        "API": "/api/сессия",
+        "UI": "/сессия"
+      }
+    },
+    {
+      "object_id": "o00009",
+      "object_name": "Рецепт",
+      "resource_state": [],
+      "object_links": {
+        "manual": "документация по рецепт",
+        "API": "/api/рецепт",
+        "UI": "/рецепт"
+      }
+    },
+    {
+      "object_id": "o00010",
+      "object_name": "Ингредиент",
+      "resource_state": [],
+      "object_links": {
+        "manual": "документация по ингредиент",
+        "API": "/api/ингредиент",
+        "UI": "/ингредиент"
+      }
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_out": "o00005s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00006s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00007s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "a00001",
+      "connection_in": "o00005s00002"
+    },
+    {
+      "connection_out": "a00001",
+      "connection_in": "o00006s00002"
+    },
+    {
+      "connection_out": "a00001",
+      "connection_in": "o00007s00002"
+    },
+    {
+      "connection_out": "o00005s00002",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00008s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "a00002",
+      "connection_in": "o00005s00003"
+    },
+    {
+      "connection_out": "a00002",
+      "connection_in": "o00008s00002"
+    },
+    {
+      "connection_out": "o00005s00002",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "a00003",
+      "connection_in": "o00007s00003"
+    }
+  ]
+}
