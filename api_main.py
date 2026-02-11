@@ -91,14 +91,48 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 self._set_cors_headers()
                 self.end_headers()
                 
-                # Вызываем простой анализ
-                model = self.simple_text_analysis(text)
+                # 1. Генерируем промпт для LLM
+                prompt = self.generate_llm_prompt(text)
+                print(f"   📝 Промпт для LLM (первые 200 символов): {prompt[:200]}...")
                 
-                # Сохраняем модель
-                if model_name:
-                    filename = self.save_model_to_file(model, model_name)
-                    if filename:
-                        print(f"   💾 Модель сохранена: {filename}")
+                # 2. Отправляем запрос к LLM
+                print("   🤖 Отправляю запрос к LLM...")
+                llm_response = self.query_llm(prompt)
+                
+                actions_data = []
+                
+                if llm_response["success"]:
+                    print("   ✅ LLM ответил успешно!")
+                    print(f"   📄 Ответ LLM (первые 200 символов): {llm_response['response'][:200]}...")
+                    
+                    # 3. Парсим ответ LLM
+                    actions_data = self.parse_llm_response(llm_response["response"])
+                    
+                    if actions_data:
+                        print(f"   📊 LLM нашел {len(actions_data)} действий")
+                        
+                        # 4. Добавляем каждое действие в модель
+                        for i, action_data in enumerate(actions_data):
+                            print(f"   🔍 Обработка действия {i+1}/{len(actions_data)}...")
+                            success = self.add_action_to_model(action_data, model_name)
+                            if not success:
+                                print(f"   ❌ Ошибка при обработке действия {i+1}")
+                    else:
+                        print("   ❌ LLM не вернул корректные действия")
+                else:
+                    print(f"   ❌ Ошибка LLM: {llm_response.get('error', 'неизвестно')}")
+                
+                # 5. Загружаем финальную модель для ответа
+                model = {
+                    "model_actions": [],
+                    "model_objects": [],
+                    "model_connections": []
+                }
+                
+                filename = f"models/{model_name}.json"
+                if os.path.exists(filename):
+                    with open(filename, 'r', encoding='utf-8') as f:
+                        model = json.load(f)
                 
                 response = {
                     "success": True,
@@ -131,120 +165,349 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
         """Переопределяем логирование для вывода в наш логгер"""
         logger.info(f"{self.address_string()} - {format % args}")
     
-    def simple_text_analysis(self, text):
+    def generate_llm_prompt(self, text):
         """
-        ПРОСТОЙ анализ текста ТЗ
-        Возвращает структуру с action_name (старый формат)
+        Генерирует промпт для LLM (Ollama) для анализа ТЗ
         """
-        print("🔍 АНАЛИЗ ТЕКСТА ТЗ")
-        print(f"📄 Длина текста: {len(text)} символов")
+        prompt = (
+            "Ты — высококвалифицированный архитектор систем. Твоя задача — "
+            "проанализировать предоставленный текст технического задания (ТЗ) и "
+            "сформировать список действий системы в виде **JSON-массива**.\n\n"
+            "**ФОРМАТ КАЖДОГО ДЕЙСТВИЯ:**\n"
+            "{\n"
+            "  \"action_actor\": \"пользователь\" | \"система\" | \"администратор\" | \"незарегистрированный пользователь\" | ...,\n"
+            "  \"action_action\": \"глагол + объект\" (например: \"создает задачу\", \"изменяет статус\"),\n"
+            "  \"action_place\": \"где происходит действие\" (опционально),\n"
+            "  \"init_states\": [\n"
+            "    {\"object_name\": \"имя объекта\", \"state_name\": \"необходимое состояние\"},\n"
+            "    ...\n"
+            "  ],\n"
+            "  \"final_states\": [\n"
+            "    {\"object_name\": \"имя объекта\", \"state_name\": \"результирующее состояние\"},\n"
+            "    ...\n"
+            "  ]\n"
+            "}\n\n"
+            "**ПРАВИЛА:**\n"
+            "1. action_actor: кто инициирует действие\n"
+            "   - 'пользователь' / 'незарегистрированный пользователь' / 'пользователь с ролью администратор' / 'система'\n"
+            "2. action_action: глагол + объект (что делается)\n"
+            "3. action_place: где происходит (если можно определить)\n"
+            "4. init_states: состояния объектов, необходимые для действия\n"
+            "5. final_states: состояния объектов после действия\n\n"
+            "**ТЕКСТ ТЗ ДЛЯ АНАЛИЗА:**\n"
+            f"{text[:2000]}"  # Ограничиваем длину\n\n"
+            "**ВЫВЕДИ ТОЛЬКО JSON-МАССИВ БЕЗ КОММЕНТАРИЕВ:**"
+        )
         
-        # Результаты
-        actions = []
-        objects = []
-        connections = []
-        
-        lines = text.split('\n')
-        action_counter = 1
-        object_counter = 1
-        
-        # 1. Ищем номерированные пункты как действия
-        print("🔍 Поиск действий...")
-        
-        for i, line in enumerate(lines):
-            line = line.strip()
-            if not line:
-                continue
+        return prompt
+    
+    def query_llm(self, prompt):
+        """
+        Отправляет запрос к Ollama LLM
+        """
+        try:
+            import requests
             
-            # Ищем номерированные пункты (1., 2., 3.)
-            if line and line[0].isdigit() and ('.' in line[:3] or ')' in line[:3]):
-                # Извлекаем название пункта
-                point_text = line.split('.', 1)[-1].split(')', 1)[-1].strip()
-                
-                if point_text and len(point_text) > 3:  # Минимальная длина
-                    action_id = f"a{action_counter:05d}"
-                    action_counter += 1
-                    
-                    action = {
-                        "action_id": action_id,
-                        "action_name": point_text,
-                        "action_links": {
-                            "manual": f"Из ТЗ: строка {i+1}",
-                            "API": "",
-                            "UI": ""
-                        }
-                    }
-                    
-                    actions.append(action)
-                    print(f"   ✅ Найдено действие: {point_text[:50]}...")
-        
-        # 2. Ищем объекты
-        print("\n🔍 Поиск объектов...")
-        
-        object_keywords = [
-            'пользователь', 'администратор', 'исполнитель', 'система',
-            'задача', 'документ', 'отчет', 'файл', 'уведомление',
-            'статус', 'приоритет', 'база данных'
-        ]
-        
-        text_lower = text.lower()
-        unique_objects = set()
-        
-        for obj_keyword in object_keywords:
-            if obj_keyword in text_lower:
-                unique_objects.add(obj_keyword.capitalize())
-        
-        # Создаем объекты
-        for obj_name in unique_objects:
-            object_id = f"o{object_counter:05d}"
-            object_counter += 1
+            ollama_url = "http://localhost:11434/api/generate"
             
-            # Простые состояния
-            states = [
-                {"state_id": "s00001", "state_name": "неактивен"},
-                {"state_id": "s00002", "state_name": "активен"}
-            ]
-            
-            obj = {
-                "object_id": object_id,
-                "object_name": obj_name,
-                "resource_state": states
+            payload = {
+                "model": "llama3.2",
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.3,
+                    "num_predict": 1000
+                }
             }
             
-            objects.append(obj)
-            print(f"   ✅ Найден объект: {obj_name}")
+            response = requests.post(ollama_url, json=payload, timeout=30)
+            
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "success": True,
+                    "response": result.get("response", "")
+                }
+            else:
+                print(f"❌ Ошибка LLM: {response.status_code}")
+                return {
+                    "success": False,
+                    "error": f"LLM ошибка: {response.status_code}"
+                }
+                
+        except Exception as e:
+            print(f"❌ Ошибка при запросе к LLM: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def parse_llm_response(self, response):
+        """
+        Парсит ответ LLM и извлекает массив действий
+        """
+        try:
+            # Убираем возможные markdown обертки
+            response = response.strip()
+            if response.startswith('```json'):
+                response = response[7:]
+            if response.startswith('```'):
+                response = response[3:]
+            if response.endswith('```'):
+                response = response[:-3]
+            
+            # Парсим JSON
+            actions = json.loads(response)
+            
+            if isinstance(actions, list):
+                print(f"✅ Распарсено {len(actions)} действий из LLM")
+                return actions
+            else:
+                print(f"❌ LLM вернул не массив: {type(actions)}")
+                return []
+                
+        except json.JSONDecodeError as e:
+            print(f"❌ Ошибка парсинга JSON от LLM: {e}")
+            print(f"Ответ LLM: {response[:200]}...")
+            return []
+        except Exception as e:
+            print(f"❌ Ошибка при парсинге LLM ответа: {e}")
+            return []
+    
+    def add_action_to_model(self, action_data, model_name):
+        """
+        Добавляет действие в модель с правильными ID и структурой
         
-        # 3. Простые связи
-        print("\n🔗 Создание связей...")
-        
-        if actions and objects:
-            # Простая логика: связываем действия с объектами
-            for i, action in enumerate(actions):
-                for j, obj in enumerate(objects):
-                    if i < len(objects):  # Простая логика связей
-                        connection = {
-                            "connection_out": f"{obj['object_id']}s00001",
-                            "connection_in": f"{action['action_id']}"
-                        }
-                        connections.append(connection)
-        
-        # 4. Итоги
-        print(f"\n📊 РЕЗУЛЬТАТЫ:")
-        print(f"   ✅ Действий: {len(actions)}")
-        print(f"   ✅ Объектов: {len(objects)}")
-        print(f"   ✅ Связей: {len(connections)}")
-        
-        # Возвращаем результат
+        action_data: {
+            "action_actor": "пользователь",
+            "action_action": "создает задачу",
+            "action_place": "главная страница",
+            "init_states": [{"object_name": "пользователь", "state_name": "авторизован"}],
+            "final_states": [{"object_name": "задача", "state_name": "создана"}]
+        }
+        """
+        try:
+            # 1. Загружаем существующую модель или создаем новую
+            filename = f"models/{model_name}.json"
+            
+            if os.path.exists(filename):
+                with open(filename, 'r', encoding='utf-8') as f:
+                    model = json.load(f)
+                
+                # Извлекаем существующие данные
+                existing_actions = model.get("model_actions", [])
+                existing_objects = model.get("model_objects", [])
+                existing_connections = model.get("model_connections", [])
+                
+                # Определяем следующий ID действий
+                if existing_actions:
+                    last_action_id = existing_actions[-1]["action_id"]
+                    next_action_num = int(last_action_id[1:]) + 1
+                else:
+                    next_action_num = 1
+            else:
+                # Создаем новую модель
+                model = {
+                    "version": "1.0",
+                    "metadata": {
+                        "name": model_name,
+                        "generated_at": datetime.datetime.now().isoformat(),
+                        "source": "api_main.py",
+                        "chunks_processed": 1
+                    },
+                    "model_actions": [],
+                    "model_objects": [],
+                    "model_connections": []
+                }
+                existing_actions = []
+                existing_objects = []
+                existing_connections = []
+                next_action_num = 1
+            
+            # 2. Проверяем, существует ли уже такое действие
+            action_id = None
+            for existing_action in existing_actions:
+                if (existing_action.get("action_actor") == action_data["action_actor"] and
+                    existing_action.get("action_action") == action_data["action_action"] and
+                    existing_action.get("action_place") == action_data.get("action_place", "")):
+                    
+                    action_id = existing_action["action_id"]
+                    print(f"   🔄 Действие уже существует: {action_id}")
+                    break
+            
+            # 3. Если действие новое, создаем его
+            if not action_id:
+                action_id = f"a{next_action_num:05d}"
+                next_action_num += 1
+                
+                new_action = {
+                    "action_id": action_id,
+                    "action_actor": action_data["action_actor"],
+                    "action_action": action_data["action_action"],
+                    "action_place": action_data.get("action_place", ""),
+                    "action_links": {
+                        "manual": "Из LLM анализа",
+                        "API": "",
+                        "UI": ""
+                    }
+                }
+                
+                existing_actions.append(new_action)
+                print(f"   ✅ Создано новое действие: {action_id}")
+            
+            # 4. Обрабатываем init_states и final_states
+            all_state_pairs = []
+            
+            # Собираем все состояния из action_data
+            if "init_states" in action_data:
+                for state in action_data["init_states"]:
+                    all_state_pairs.append({
+                        "type": "init",
+                        "object_name": state["object_name"],
+                        "state_name": state["state_name"]
+                    })
+            
+            if "final_states" in action_data:
+                for state in action_data["final_states"]:
+                    all_state_pairs.append({
+                        "type": "final",
+                        "object_name": state["object_name"],
+                        "state_name": state["state_name"]
+                    })
+            
+            # 5. Для каждого состояния находим или создаем объект и состояние
+            for state_pair in all_state_pairs:
+                obj_name = state_pair["object_name"]
+                state_name = state_pair["state_name"]
+                
+                # Ищем существующий объект
+                obj_found = None
+                obj_index = -1
+                
+                for i, obj in enumerate(existing_objects):
+                    if obj["object_name"].lower() == obj_name.lower():
+                        obj_found = obj
+                        obj_index = i
+                        break
+                
+                # Если объект не найден, создаем новый
+                if not obj_found:
+                    # Определяем следующий ID объекта
+                    if existing_objects:
+                        last_obj_id = existing_objects[-1]["object_id"]
+                        next_obj_num = int(last_obj_id[1:]) + 1
+                    else:
+                        next_obj_num = 1
+                    
+                    obj_id = f"o{next_obj_num:05d}"
+                    
+                    new_obj = {
+                        "object_id": obj_id,
+                        "object_name": obj_name,
+                        "resource_state": []
+                    }
+                    
+                    existing_objects.append(new_obj)
+                    obj_found = new_obj
+                    obj_index = len(existing_objects) - 1
+                    print(f"   ✅ Создан новый объект: {obj_name} ({obj_id})")
+                
+                # Ищем существующее состояние в объекте
+                state_found = False
+                state_id = None
+                
+                for state in obj_found["resource_state"]:
+                    if state["state_name"].lower() == state_name.lower():
+                        state_found = True
+                        state_id = state["state_id"]
+                        break
+                
+                # Если состояние не найдено, создаем новое
+                if not state_found:
+                    # Определяем следующий ID состояния
+                    if obj_found["resource_state"]:
+                        last_state_id = obj_found["resource_state"][-1]["state_id"]
+                        next_state_num = int(last_state_id[1:]) + 1
+                    else:
+                        next_state_num = 1
+                    
+                    state_id = f"s{next_state_num:05d}"
+                    
+                    new_state = {
+                        "state_id": state_id,
+                        "state_name": state_name
+                    }
+                    
+                    existing_objects[obj_index]["resource_state"].append(new_state)
+                    print(f"   ✅ Добавлено новое состояние: {obj_name}.{state_name} ({state_id})")
+                
+                # 6. Создаем связь
+                connection_id = None
+                
+                if state_pair["type"] == "init":
+                    # init_state → action
+                    connection_id = f"c{len(existing_connections) + 1:05d}"
+                    connection = {
+                        "connection_id": connection_id,
+                        "connection_out": f"{obj_found['object_id']}{state_id}",
+                        "connection_in": action_id,
+                        "description": f"{obj_name} {state_name} → {action_data['action_actor']} {action_data['action_action']}",
+                        "type": "triggers"
+                    }
+                else:  # final
+                    # action → final_state
+                    connection_id = f"c{len(existing_connections) + 1:05d}"
+                    connection = {
+                        "connection_id": connection_id,
+                        "connection_out": action_id,
+                        "connection_in": f"{obj_found['object_id']}{state_id}",
+                        "description": f"{action_data['action_actor']} {action_data['action_action']} → {obj_name} {state_name}",
+                        "type": "results_in"
+                    }
+                
+                # Проверяем, не существует ли уже такая связь
+                connection_exists = False
+                for conn in existing_connections:
+                    if (conn["connection_out"] == connection["connection_out"] and
+                        conn["connection_in"] == connection["connection_in"]):
+                        connection_exists = True
+                        break
+                
+                if not connection_exists:
+                    existing_connections.append(connection)
+                    print(f"   🔗 Создана связь: {connection['description']}")
+            
+            # 7. Обновляем модель
+            model["model_actions"] = existing_actions
+            model["model_objects"] = existing_objects
+            model["model_connections"] = existing_connections
+            
+            # 8. Сохраняем модель
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(model, f, ensure_ascii=False, indent=2)
+            
+            print(f"   💾 Модель обновлена: {filename}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Ошибка при добавлении действия в модель: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def simple_text_analysis(self, text):
+        """
+        УПРАЗДНЕН - теперь используем LLM анализ
+        """
+        print("⚠️  simple_text_analysis УПРАЗДНЕН")
+        print("   Используйте LLM анализ через generate_llm_prompt()")
         return {
-            "model_actions": actions,
-            "model_objects": objects,
-            "model_connections": connections,
+            "model_actions": [],
+            "model_objects": [],
+            "model_connections": [],
             "analysis_metadata": {
-                "analysis_method": "simple_text_analysis",
-                "text_length": len(text),
-                "actions_found": len(actions),
-                "objects_found": len(objects),
-                "connections_created": len(connections)
+                "analysis_method": "deprecated",
+                "warning": "Используйте LLM анализ"
             }
         }
     

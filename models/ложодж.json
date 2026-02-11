@@ -1,0 +1,400 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "ложодж",
+    "generated_at": "2026-02-11T18:08:19.283914",
+    "source": "api_main.py",
+    "chunks_processed": 1
+  },
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_name": "Создание задачи",
+      "action_links": {
+        "manual": "Из ТЗ: строка 5",
+        "API": "",
+        "UI": ""
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_name": "Назначение задачи",
+      "action_links": {
+        "manual": "Из ТЗ: строка 10",
+        "API": "",
+        "UI": ""
+      }
+    },
+    {
+      "action_id": "a00003",
+      "action_name": "Выполнение задачи",
+      "action_links": {
+        "manual": "Из ТЗ: строка 15",
+        "API": "",
+        "UI": ""
+      }
+    },
+    {
+      "action_id": "a00004",
+      "action_name": "Проверка задачи",
+      "action_links": {
+        "manual": "Из ТЗ: строка 20",
+        "API": "",
+        "UI": ""
+      }
+    },
+    {
+      "action_id": "a00005",
+      "action_name": "Отчетность",
+      "action_links": {
+        "manual": "Из ТЗ: строка 25",
+        "API": "",
+        "UI": ""
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00001",
+      "object_name": "Система",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00002",
+      "object_name": "Отчет",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00003",
+      "object_name": "Исполнитель",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00004",
+      "object_name": "Уведомление",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00005",
+      "object_name": "Администратор",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00006",
+      "object_name": "Задача",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00007",
+      "object_name": "Приоритет",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00008",
+      "object_name": "Статус",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00009",
+      "object_name": "Пользователь",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00010",
+      "object_name": "Файл",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неактивен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "активен"
+        }
+      ]
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_out": "o00001s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00002s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00003s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00004s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00005s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00006s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00007s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00008s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00009s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00010s00001",
+      "connection_in": "a00001"
+    },
+    {
+      "connection_out": "o00001s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00002s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00003s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00004s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00005s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00006s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00007s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00008s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00009s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00010s00001",
+      "connection_in": "a00002"
+    },
+    {
+      "connection_out": "o00001s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00002s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00003s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00004s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00005s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00006s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00007s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00008s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00009s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00010s00001",
+      "connection_in": "a00003"
+    },
+    {
+      "connection_out": "o00001s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00002s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00003s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00004s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00005s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00006s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00007s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00008s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00009s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00010s00001",
+      "connection_in": "a00004"
+    },
+    {
+      "connection_out": "o00001s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00002s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00003s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00004s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00005s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00006s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00007s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00008s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00009s00001",
+      "connection_in": "a00005"
+    },
+    {
+      "connection_out": "o00010s00001",
+      "connection_in": "a00005"
+    }
+  ]
+}
