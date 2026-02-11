@@ -526,99 +526,253 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
             return None
 
     def simple_text_analysis(self, text):
-        """Упрощенный анализ текста (используется если LLM недоступен)"""
+        """Реальный анализ текста ТЗ (используется если LLM недоступен)"""
+        print("🔍 ЗАПУСК РЕАЛЬНОГО АНАЛИЗА ТЕКСТА ТЗ")
+        print(f"📄 Длина текста: {len(text)} символов")
+        
         actions = []
         objects = []
         connections = []
         
-        # Извлекаем действия из текста (упрощенно)
-        action_keywords = ['Регистрация', 'Авторизация', 'Ввод', 'Установка', 'Выбор', 
-                         'Расчет', 'Отображение', 'Добавление', 'Удаление', 'Редактирование',
-                         'Поиск', 'Просмотр', 'Генерация', 'Разработка', 'Хранение']
-        
         lines = text.split('\n')
         action_counter = 1
         object_counter = 1
+        connection_counter = 1
         
-        # Находим уникальные действия
-        found_actions = []
-        for line in lines:
-            line_lower = line.lower()
-            for keyword in action_keywords:
-                if keyword.lower() in line_lower and keyword not in found_actions:
-                    found_actions.append(keyword)
+        # 1. Ищем действия в ТЗ (номерированные пункты)
+        print("🔍 Поиск действий в ТЗ...")
+        for i, line in enumerate(lines):
+            line = line.strip()
+            
+            # Ищем номерированные пункты (1., 2., 3. и т.д.)
+            if line and line[0].isdigit() and ('.' in line[:3] or ')' in line[:3]):
+                # Извлекаем название действия
+                action_name = line.split('.', 1)[-1].split(')', 1)[-1].strip()
+                
+                # Очищаем от лишних слов
+                if len(action_name) > 5:  # Минимальная длина названия действия
+                    action_id = f"a{action_counter:05d}"
+                    actions.append({
+                        "action_id": action_id,
+                        "action_name": action_name[:100],  # Ограничиваем длину
+                        "action_links": {
+                            "manual": f"Из ТЗ: строка {i+1}",
+                            "API": "",
+                            "UI": ""
+                        }
+                    })
+                    print(f"   ✅ Найдено действие: {action_name[:50]}...")
+                    action_counter += 1
+            
+            # Ищем глаголы, обозначающие действия
+            elif 'требуется' in line.lower() or 'нужно' in line.lower() or 'должен' in line.lower():
+                # Извлекаем глагол после указателя
+                words = line.split()
+                for j, word in enumerate(words):
+                    if word.lower() in ['требуется', 'нужно', 'должен', 'следует'] and j + 1 < len(words):
+                        # Берем следующие 2-3 слова как название действия
+                        action_name = ' '.join(words[j+1:j+4])
+                        if len(action_name) > 3:
+                            action_id = f"a{action_counter:05d}"
+                            actions.append({
+                                "action_id": action_id,
+                                "action_name": action_name[:100],
+                                "action_links": {
+                                    "manual": f"Из ТЗ: строка {i+1}",
+                                    "API": "",
+                                    "UI": ""
+                                }
+                            })
+                            print(f"   ✅ Найдено действие: {action_name[:50]}...")
+                            action_counter += 1
+                        break
         
-        # Создаем действия
-        for action_name in found_actions[:5]:  # Максимум 5 действий
-            actions.append({
-                "action_id": f"a{action_counter:05d}",
-                "action_name": f"{action_name}",
-                "action_links": {"manual": "", "API": "", "UI": ""}
-            })
-            action_counter += 1
+        # 2. Ищем объекты в ТЗ
+        print("🔍 Поиск объектов в ТЗ...")
+        object_keywords = [
+            'система', 'пользователь', 'администратор', 'исполнитель', 'задача',
+            'база данных', 'отчет', 'файл', 'уведомление', 'статус',
+            'комментарий', 'приоритет', 'срок', 'описание', 'название'
+        ]
         
-        # Если не нашли действий, создаем тестовое
-        if not actions:
-            actions = [{
-                "action_id": "a00001",
-                "action_name": "Регистрация пользователя",
-                "action_links": {"manual": "", "API": "", "UI": ""}
-            }]
-        
-        # Создаем объекты на основе текста
-        object_keywords = ['пользователь', 'профиль', 'система', 'база данных', 
-                         'рецепт', 'продукт', 'план', 'список', 'календарь',
-                         'приложение', 'сервер', 'клиент', 'интерфейс']
-        
-        found_objects = []
-        for line in lines:
+        found_objects = {}
+        for i, line in enumerate(lines):
             line_lower = line.lower()
             for obj_keyword in object_keywords:
-                if obj_keyword in line_lower and obj_keyword not in found_objects:
-                    found_objects.append(obj_keyword)
+                if obj_keyword in line_lower:
+                    if obj_keyword not in found_objects:
+                        found_objects[obj_keyword] = []
+                    found_objects[obj_keyword].append(i+1)
         
         # Создаем объекты
-        for obj_name in found_objects[:3]:  # Максимум 3 объекта
-            objects.append({
-                "object_id": f"o{object_counter:05d}",
-                "object_name": obj_name.capitalize(),
-                "resource_state": [
-                    {"state_id": "s00001", "state_name": "неактивен"},
-                    {"state_id": "s00002", "state_name": "активен"}
+        for obj_name, lines_found in list(found_objects.items())[:10]:  # Максимум 10 объектов
+            object_id = f"o{object_counter:05d}"
+            
+            # Определяем возможные состояния объекта на основе контекста
+            states = []
+            state_counter = 1
+            
+            # Базовые состояния для разных типов объектов
+            if obj_name in ['пользователь', 'администратор', 'исполнитель']:
+                states = [
+                    {"state_id": f"s{state_counter:05d}", "state_name": "неактивен"},
+                    {"state_id": f"s{state_counter+1:05d}", "state_name": "активен"}
                 ]
+            elif obj_name in ['задача']:
+                states = [
+                    {"state_id": f"s{state_counter:05d}", "state_name": "новая"},
+                    {"state_id": f"s{state_counter+1:05d}", "state_name": "в работе"},
+                    {"state_id": f"s{state_counter+2:05d}", "state_name": "завершена"}
+                ]
+            elif obj_name in ['статус']:
+                states = [
+                    {"state_id": f"s{state_counter:05d}", "state_name": "не установлен"},
+                    {"state_id": f"s{state_counter+1:05d}", "state_name": "установлен"}
+                ]
+            else:
+                states = [
+                    {"state_id": f"s{state_counter:05d}", "state_name": "не создан"},
+                    {"state_id": f"s{state_counter+1:05d}", "state_name": "создан"}
+                ]
+            
+            objects.append({
+                "object_id": object_id,
+                "object_name": obj_name.capitalize(),
+                "resource_state": states,
+                "found_in_lines": lines_found
             })
+            print(f"   ✅ Найден объект: {obj_name} (строки: {', '.join(map(str, lines_found))})")
             object_counter += 1
         
-        # Если не нашли объектов, создаем тестовые
-        if not objects:
-            objects = [
-                {
-                    "object_id": "o00001",
-                    "object_name": "Пользователь",
-                    "resource_state": [
-                        {"state_id": "s00001", "state_name": "неактивен"},
-                        {"state_id": "s00002", "state_name": "активен"}
-                    ]
-                }
-            ]
+        # 3. Создаем связи на основе контекста
+        print("🔍 Создание связей на основе контекста...")
         
-        # Создаем связи между действиями и состояниями объектов
+        # Простая логика: связываем действия с объектами, упомянутыми в тех же строках
         for action in actions:
+            action_lines = []
+            # Извлекаем номера строк из action_links
+            manual_info = action.get("action_links", {}).get("manual", "")
+            if "строка" in manual_info:
+                try:
+                    line_num = int(manual_info.split("строка")[-1].strip())
+                    action_lines.append(line_num)
+                except:
+                    pass
+            
+            # Ищем объекты, упомянутые в тех же строках
             for obj in objects:
-                if obj["resource_state"]:
-                    connections.append({
-                        "connection_out": f"{obj['object_id']}s00001",
-                        "connection_in": action["action_id"]
-                    })
-                    connections.append({
-                        "connection_out": action["action_id"],
-                        "connection_in": f"{obj['object_id']}s00002"
-                    })
+                obj_lines = obj.get("found_in_lines", [])
+                
+                # Проверяем пересечение строк
+                common_lines = set(action_lines) & set(obj_lines)
+                if common_lines:
+                    # Создаем связи: объект -> действие -> объект в новом состоянии
+                    for state in obj.get("resource_state", []):
+                        if state["state_name"] in ["новая", "не создан", "не установлен"]:
+                            connections.append({
+                                "connection_out": f"{obj['object_id']}{state['state_id']}",
+                                "connection_in": action["action_id"],
+                                "description": f"{obj['object_name']} {state['state_name']} -> {action['action_name']}"
+                            })
+                        elif state["state_name"] in ["создан", "установлен", "активен", "завершена"]:
+                            connections.append({
+                                "connection_out": action["action_id"],
+                                "connection_in": f"{obj['object_id']}{state['state_id']}",
+                                "description": f"{action['action_name']} -> {obj['object_name']} {state['state_name']}"
+                            })
+        
+        # 4. Если не найдено достаточно данных, создаем реалистичную модель на основе ТЗ
+        if not actions:
+            print("⚠️  Не удалось извлечь действия из ТЗ")
+            print("🔄 Создаю базовую модель на основе структуры ТЗ...")
+            
+            # Извлекаем заголовок ТЗ
+            title = ""
+            for line in lines:
+                if "техническое задание" in line.lower() or "тз" in line.lower():
+                    title = line.strip()
+                    break
+            
+            if not title:
+                title = lines[0] if lines else "Неизвестное ТЗ"
+            
+            # Создаем базовые действия на основе структуры
+            sections = []
+            current_section = ""
+            for line in lines:
+                if line.strip() and (line[0].isdigit() or line.lower().startswith("функция") or line.lower().startswith("требование")):
+                    sections.append(line.strip())
+            
+            for i, section in enumerate(sections[:5]):  # Максимум 5 секций как действий
+                actions.append({
+                    "action_id": f"a{i+1:05d}",
+                    "action_name": section[:80],
+                    "action_links": {"manual": "Из структуры ТЗ", "API": "", "UI": ""}
+                })
+            
+            # Создаем базовые объекты
+            if not objects:
+                objects = [
+                    {
+                        "object_id": "o00001",
+                        "object_name": "Система управления задачами",
+                        "resource_state": [
+                            {"state_id": "s00001", "state_name": "не разработана"},
+                            {"state_id": "s00002", "state_name": "разработана"}
+                        ]
+                    },
+                    {
+                        "object_id": "o00002",
+                        "object_name": "Пользователь",
+                        "resource_state": [
+                            {"state_id": "s00001", "state_name": "не авторизован"},
+                            {"state_id": "s00002", "state_name": "авторизован"}
+                        ]
+                    }
+                ]
+                
+                # Создаем базовые связи
+                for action in actions:
+                    connections.extend([
+                        {
+                            "connection_out": "o00001s00001",
+                            "connection_in": action["action_id"],
+                            "description": "Система не разработана -> Действие"
+                        },
+                        {
+                            "connection_out": action["action_id"],
+                            "connection_in": "o00001s00002",
+                            "description": "Действие -> Система разработана"
+                        }
+                    ])
+        
+        print(f"📊 РЕЗУЛЬТАТЫ АНАЛИЗА:")
+        print(f"   • Действий: {len(actions)}")
+        print(f"   • Объектов: {len(objects)}")
+        print(f"   • Связей: {len(connections)}")
+        
+        if len(actions) == 0:
+            print("❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось извлечь ни одного действия из ТЗ")
+            print("   Возможные причины:")
+            print("   1. ТЗ не содержит структурированных данных")
+            print("   2. Формат ТЗ не распознан")
+            print("   3. Текст слишком короткий или некорректный")
+        elif len(actions) < 2:
+            print("⚠️  ПРЕДУПРЕЖДЕНИЕ: Найдено очень мало действий")
+            print("   Рекомендуется проверить формат ТЗ")
         
         return {
             "model_actions": actions,
             "model_objects": objects,
-            "model_connections": connections
+            "model_connections": connections,
+            "analysis_metadata": {
+                "total_lines": len(lines),
+                "found_actions": len(actions),
+                "found_objects": len(objects),
+                "found_connections": len(connections),
+                "analysis_method": "simple_text_analysis",
+                "warning": "LLM недоступен, использован упрощенный анализ"
+            }
         }
 
 def run_server(port=5001):
