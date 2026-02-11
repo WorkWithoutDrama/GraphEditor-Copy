@@ -95,8 +95,37 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 prompt = self.generate_llm_prompt(text)
                 print(f"   📝 Промпт для LLM (первые 200 символов): {prompt[:200]}...")
                 
-                # 2. Отправляем запрос к LLM
-                print("   🤖 Отправляю запрос к LLM...")
+                # 2. Проверяем доступность LLM
+                print("   🤖 Проверяю доступность LLM...")
+                llm_response = self.query_llm("test")
+                
+                if not llm_response["success"]:
+                    # LLM не доступен - возвращаем ошибку
+                    error_msg = "LLM (Ollama) не доступен. Запустите Ollama и модель llama3.2"
+                    print(f"   ❌ {error_msg}")
+                    
+                    self.send_response(503)  # Service Unavailable
+                    self.send_header("Content-Type", "application/json")
+                    self._set_cors_headers()
+                    self.end_headers()
+                    
+                    error_response = {
+                        "success": False,
+                        "error": error_msg,
+                        "details": "Для анализа ТЗ требуется запущенный Ollama с моделью llama3.2",
+                        "help": [
+                            "1. Установите Ollama: https://ollama.ai/",
+                            "2. Запустите: ollama serve",
+                            "3. Скачайте модель: ollama pull llama3.2",
+                            "4. Попробуйте снова"
+                        ]
+                    }
+                    
+                    self.wfile.write(json.dumps(error_response, indent=2, ensure_ascii=False).encode())
+                    return
+                
+                # 3. LLM доступен - отправляем реальный запрос
+                print("   🤖 LLM доступен, отправляю запрос для анализа ТЗ...")
                 llm_response = self.query_llm(prompt)
                 
                 actions_data = []
@@ -105,13 +134,13 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                     print("   ✅ LLM ответил успешно!")
                     print(f"   📄 Ответ LLM (первые 200 символов): {llm_response['response'][:200]}...")
                     
-                    # 3. Парсим ответ LLM
+                    # 4. Парсим ответ LLM
                     actions_data = self.parse_llm_response(llm_response["response"])
                     
                     if actions_data:
                         print(f"   📊 LLM нашел {len(actions_data)} действий")
                         
-                        # 4. Добавляем каждое действие в модель
+                        # 5. Добавляем каждое действие в модель
                         for i, action_data in enumerate(actions_data):
                             print(f"   🔍 Обработка действия {i+1}/{len(actions_data)}...")
                             success = self.add_action_to_model(action_data, model_name)
@@ -119,8 +148,29 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                                 print(f"   ❌ Ошибка при обработке действия {i+1}")
                     else:
                         print("   ❌ LLM не вернул корректные действия")
+                        
+                        # Возвращаем ошибку парсинга
+                        error_response = {
+                            "success": False,
+                            "error": "LLM вернул некорректный формат",
+                            "details": "Ollama не смог проанализировать ТЗ и вернул неверный формат",
+                            "llm_response_preview": llm_response["response"][:500]
+                        }
+                        
+                        self.wfile.write(json.dumps(error_response, indent=2, ensure_ascii=False).encode())
+                        return
                 else:
                     print(f"   ❌ Ошибка LLM: {llm_response.get('error', 'неизвестно')}")
+                    
+                    # Возвращаем ошибку LLM
+                    error_response = {
+                        "success": False,
+                        "error": "Ошибка LLM",
+                        "details": llm_response.get("error", "Неизвестная ошибка LLM")
+                    }
+                    
+                    self.wfile.write(json.dumps(error_response, indent=2, ensure_ascii=False).encode())
+                    return
                 
                 # 5. Загружаем финальную модель для ответа
                 model = {
@@ -340,15 +390,32 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 action_id = f"a{next_action_num:05d}"
                 next_action_num += 1
                 
+                # Создаем действие с полями для графа
+                action_label = f"{action_data['action_actor']} {action_data['action_action']}"
+                if action_data.get("action_place"):
+                    action_label += f" ({action_data['action_place']})"
+                
                 new_action = {
                     "action_id": action_id,
+                    # Новая структура
                     "action_actor": action_data["action_actor"],
                     "action_action": action_data["action_action"],
                     "action_place": action_data.get("action_place", ""),
+                    # Совместимость со старым кодом (для graph-manager.js)
+                    "action_name": action_label,  # ← ДЛЯ ГРАФА!
                     "action_links": {
                         "manual": "Из LLM анализа",
                         "API": "",
                         "UI": ""
+                    },
+                    # Дополнительные поля для графа
+                    "graph_data": {
+                        "id": action_id,
+                        "label": action_label,
+                        "type": "action",
+                        "actor": action_data["action_actor"],
+                        "action": action_data["action_action"],
+                        "place": action_data.get("action_place", "")
                     }
                 }
                 
