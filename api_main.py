@@ -579,60 +579,6 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
             return None
 
     def _convert_to_enhanced_structure(self, model):
-        """Преобразует старую структуру модели в новую улучшенную"""
-        print("   🔄 Преобразование структуры модели...")
-        
-        actions = model.get("model_actions", [])
-        enhanced_actions = []
-        
-        for i, action in enumerate(actions):
-            old_name = action.get("action_name", "неизвестное действие")
-            
-            # Анализируем старое название для извлечения контекста
-            old_name_lower = old_name.lower()
-            
-            # Определяем актора
-            action_actor = "Пользователь"  # по умолчанию
-            if "администратор" in old_name_lower:
-                action_actor = "Администратор"
-            elif "исполнитель" in old_name_lower:
-                action_actor = "Исполнитель"
-            elif "система" in old_name_lower:
-                action_actor = "Система"
-            
-            # Определяем действие
-            action_action = old_name_lower
-            
-            # Определяем место
-            action_place = "Система"  # по умолчанию
-            if "база данных" in old_name_lower:
-                action_place = "База данных"
-            elif "страница" in old_name_lower:
-                action_place = "Главная страница"
-            
-            # Создаем улучшенное действие
-            enhanced_action = {
-                "action_id": action.get("action_id", f"a{i+1:05d}"),
-                "action_actor": action_actor,
-                "action_action": action_action,
-                "action_place": action_place,
-                "action_links": action.get("action_links", {"manual": "", "API": "", "UI": ""}),
-                "source_line": 0,
-                "source_text": old_name
-            }
-            
-            enhanced_actions.append(enhanced_action)
-        
-        # Обновляем модель
-        model["model_actions"] = enhanced_actions
-        
-        # Обновляем метаданные анализа
-        if "analysis_metadata" in model:
-            model["analysis_metadata"]["structure_converted"] = True
-            model["analysis_metadata"]["converted_at"] = datetime.datetime.now().isoformat()
-        
-        return model
-
     def _merge_unique(self, list1, list2, key_func):
         """Объединяет два списка, убирая дубликаты по ключу"""
         if isinstance(key_func, str):
@@ -729,11 +675,8 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
             # Анализируем чанк с УЛУЧШЕННЫМ методом
             chunk_result = self.simple_text_analysis(chunk)
             
-            # Проверяем и гарантируем новую структуру
-            actions = chunk_result.get("model_actions", [])
-            if actions and "action_actor" not in actions[0]:
-                print(f"   ⚠️  ПРЕДУПРЕЖДЕНИЕ: Использую преобразование структуры")
-                chunk_result = self._convert_to_enhanced_structure(chunk_result)
+            # Просто используем результат как есть
+            # Без преобразований, сохраняем ровно то, что вернул анализ
             
             # Извлекаем статистику
             chunk_actions = len(actions)
@@ -878,7 +821,7 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                 if "action_actor" not in first_action:
                     print(f"   ⚠️  ПРЕДУПРЕЖДЕНИЕ: Результат не содержит улучшенную структуру!")
                     # Принудительно преобразуем к новой структуре
-                    self._convert_to_enhanced_structure(chunk_result)
+                    # Преобразование удалено
             
             # Извлекаем статистику
             chunk_actions = len(chunk_result.get("model_actions", []))
@@ -942,15 +885,14 @@ import datetime
 
 def simple_text_analysis(self, text):
     """
-    РЕАЛЬНЫЙ анализ текста ТЗ БЕЗ МОК-ДАННЫХ
-    
-    Возвращает только то, что реально найдено в тексте.
-    Если не найдено - возвращает пустые списки.
+    ПРОСТОЙ анализ текста ТЗ
+    Возвращает структуру с action_name (старый формат)
+    Без преобразований, без мок-данных
     """
-    print("🔍 ЗАПУСК РЕАЛЬНОГО АНАЛИЗА ТЕКСТА ТЗ (БЕЗ МОК-ДАННЫХ)")
+    print("🔍 АНАЛИЗ ТЕКСТА ТЗ")
     print(f"📄 Длина текста: {len(text)} символов")
     
-    # Результаты анализа
+    # Результаты
     actions = []
     objects = []
     connections = []
@@ -958,111 +900,46 @@ def simple_text_analysis(self, text):
     lines = text.split('\n')
     action_counter = 1
     object_counter = 1
-    state_counter = 1
     
-    # 1. ПОИСК ДЕЙСТВИЙ (только реальные, из текста)
-    print("🔍 Поиск РЕАЛЬНЫХ действий в тексте...")
-    
-    found_actions = []
-    action_keywords = [
-        'созда', 'добав', 'измен', 'удаля', 'назнача',
-        'проверя', 'сохраня', 'отправля', 'получа', 'генер',
-        'регистриру', 'анализиру', 'формиру', 'экспортир',
-        'импортир', 'управля', 'контролиру', 'отслежива',
-        'выполня', 'заверша', 'начина', 'прекраща'
-    ]
-    
-    actor_keywords = [
-        'пользователь', 'администратор', 'исполнитель',
-        'система', 'разработчик', 'тестировщик',
-        'клиент', 'сотрудник', 'менеджер', 'оператор'
-    ]
-    
-    place_keywords = [
-        'главная страница', 'панель управления', 'база данных',
-        'личный кабинет', 'система', 'интерфейс',
-        'админ панель', 'веб-интерфейс', 'мобильное приложение',
-        'сервер', 'клиент', 'браузер'
-    ]
+    # 1. Ищем номерированные пункты как действия
+    print("🔍 Поиск действий...")
     
     for i, line in enumerate(lines):
         line = line.strip()
         if not line:
             continue
         
-        line_lower = line.lower()
-        
-        # Проверяем, содержит ли строка действие
-        contains_action = any(keyword in line_lower for keyword in action_keywords)
-        
-        if contains_action:
-            # Извлекаем контекст
-            actor = None
-            action = line[:100]  # Берем часть строки
-            place = "Система"
+        # Ищем номерированные пункты (1., 2., 3.)
+        if line and line[0].isdigit() and ('.' in line[:3] or ')' in line[:3]):
+            # Извлекаем название пункта
+            point_text = line.split('.', 1)[-1].split(')', 1)[-1].strip()
             
-            # Определяем актора
-            for actor_keyword in actor_keywords:
-                if actor_keyword in line_lower:
-                    actor = actor_keyword.capitalize()
-                    break
-            
-            # Если актор не найден, ищем в контексте
-            if not actor:
-                # Ищем в предыдущих строках
-                for j in range(max(0, i-3), i):
-                    prev_line = lines[j].lower() if j < len(lines) else ""
-                    for actor_keyword in actor_keywords:
-                        if actor_keyword in prev_line:
-                            actor = actor_keyword.capitalize()
-                            break
-                    if actor:
-                        break
-            
-            if not actor:
-                actor = "Пользователь"
-            
-            # Определяем место
-            for place_keyword in place_keywords:
-                if place_keyword in line_lower:
-                    place = place_keyword.capitalize()
-                    break
-            
-            # Создаем действие
-            action_id = f"a{action_counter:05d}"
-            action_counter += 1
-            
-            action_data = {
-                "action_id": action_id,
-                "action_actor": actor,
-                "action_action": action[:50],  # Ограничиваем длину
-                "action_place": place,
-                "action_links": {
-                    "manual": f"Из ТЗ: строка {i+1}",
-                    "API": "",
-                    "UI": ""
-                },
-                "source_line": i + 1,
-                "source_text": line[:100]
-            }
-            
-            found_actions.append(action_data)
-            print(f"   ✅ Найдено действие: {actor} {action[:30]}... ({place})")
+            if point_text and len(point_text) > 3:  # Минимальная длина
+                action_id = f"a{action_counter:05d}"
+                action_counter += 1
+                
+                action = {
+                    "action_id": action_id,
+                    "action_name": point_text,
+                    "action_links": {
+                        "manual": f"Из ТЗ: строка {i+1}",
+                        "API": "",
+                        "UI": ""
+                    }
+                }
+                
+                actions.append(action)
+                print(f"   ✅ Найдено действие: {point_text[:50]}...")
     
-    actions = found_actions
+    # 2. Ищем объекты
+    print("\n🔍 Поиск объектов...")
     
-    # 2. ПОИСК ОБЪЕКТОВ (только реальные, из текста)
-    print("\n🔍 Поиск РЕАЛЬНЫХ объектов в тексте...")
-    
-    found_objects = []
     object_keywords = [
-        'задача', 'документ', 'пользователь', 'система',
-        'администратор', 'исполнитель', 'отчет', 'файл',
-        'уведомление', 'комментарий', 'статус', 'приоритет',
-        'база данных', 'интерфейс', 'клиент', 'сервер'
+        'пользователь', 'администратор', 'исполнитель', 'система',
+        'задача', 'документ', 'отчет', 'файл', 'уведомление',
+        'статус', 'приоритет', 'база данных'
     ]
     
-    # Собираем уникальные объекты из всего текста
     text_lower = text.lower()
     unique_objects = set()
     
@@ -1070,97 +947,45 @@ def simple_text_analysis(self, text):
         if obj_keyword in text_lower:
             unique_objects.add(obj_keyword.capitalize())
     
-    # Преобразуем в объекты модели
+    # Создаем объекты
     for obj_name in unique_objects:
         object_id = f"o{object_counter:05d}"
         object_counter += 1
         
-        # Определяем возможные состояния на основе типа объекта
-        states = []
+        # Простые состояния
+        states = [
+            {"state_id": "s00001", "state_name": "неактивен"},
+            {"state_id": "s00002", "state_name": "активен"}
+        ]
         
-        if obj_name.lower() in ['пользователь', 'администратор', 'исполнитель']:
-            states = [
-                {"state_id": f"s{state_counter:05d}", "state_name": "неактивен"},
-                {"state_id": f"s{state_counter+1:05d}", "state_name": "активен"}
-            ]
-            state_counter += 2
-        elif obj_name.lower() in ['задача', 'документ']:
-            states = [
-                {"state_id": f"s{state_counter:05d}", "state_name": "не создана"},
-                {"state_id": f"s{state_counter+1:05d}", "state_name": "в работе"},
-                {"state_id": f"s{state_counter+2:05d}", "state_name": "завершена"}
-            ]
-            state_counter += 3
-        elif obj_name.lower() in ['система', 'база данных']:
-            states = [
-                {"state_id": f"s{state_counter:05d}", "state_name": "неактивна"},
-                {"state_id": f"s{state_counter+1:05d}", "state_name": "активна"}
-            ]
-            state_counter += 2
-        else:
-            states = [
-                {"state_id": f"s{state_counter:05d}", "state_name": "не создан"},
-                {"state_id": f"s{state_counter+1:05d}", "state_name": "создан"}
-            ]
-            state_counter += 2
-        
-        obj_data = {
+        obj = {
             "object_id": object_id,
             "object_name": obj_name,
-            "object_type": obj_name.lower(),
-            "resource_state": states,
-            "possible_states": [s["state_name"] for s in states]
+            "resource_state": states
         }
         
-        found_objects.append(obj_data)
+        objects.append(obj)
         print(f"   ✅ Найден объект: {obj_name}")
     
-    objects = found_objects
-    
-    # 3. СОЗДАНИЕ СВЯЗЕЙ (только если есть и действия, и объекты)
-    print("\n🔗 Создание РЕАЛЬНЫХ связей...")
-    
-    found_connections = []
+    # 3. Простые связи
+    print("\n🔗 Создание связей...")
     
     if actions and objects:
-        # Простая логика: связываем действия с объектами на основе контекста
-        for action in actions:
-            action_id = action["action_id"]
-            action_text = action["action_action"].lower()
-            
-            for obj in objects:
-                obj_name = obj["object_name"].lower()
-                
-                # Если название объекта упоминается в действии
-                if obj_name in action_text:
-                    # Связываем действие с первым состоянием объекта
-                    for state in obj["resource_state"]:
-                        connection_id = f"c{len(found_connections)+1:05d}"
-                        
-                        connection = {
-                            "connection_id": connection_id,
-                            "connection_out": action_id,
-                            "connection_in": f"{obj['object_id']}{state['state_id']}",
-                            "description": f"{action['action_actor']} {action['action_action']} → {obj['object_name']} {state['state_name']}",
-                            "type": "affects"
-                        }
-                        
-                        found_connections.append(connection)
-                        print(f"   🔗 Создана связь: {action['action_actor']} {action['action_action'][:20]}... → {obj['object_name']}")
-                        break
-                    break
+        # Простая логика: связываем действия с объектами
+        for i, action in enumerate(actions):
+            for j, obj in enumerate(objects):
+                if i < len(objects):  # Простая логика связей
+                    connection = {
+                        "connection_out": f"{obj['object_id']}s00001",
+                        "connection_in": f"{action['action_id']}"
+                    }
+                    connections.append(connection)
     
-    connections = found_connections
-    
-    # 4. ИТОГОВЫЙ ОТЧЕТ
-    print("\n📊 РЕЗУЛЬТАТЫ РЕАЛЬНОГО АНАЛИЗА:")
-    print(f"   ✅ Действий найдено: {len(actions)}")
-    print(f"   ✅ Объектов найдено: {len(objects)}")
-    print(f"   ✅ Связей создано: {len(connections)}")
-    
-    if len(actions) == 0:
-        print("\n⚠️  ВНИМАНИЕ: В тексте не найдено действий!")
-        print("   Проверьте, содержит ли ТЗ описания действий (создает, изменяет, удаляет и т.д.)")
+    # 4. Итоги
+    print(f"\n📊 РЕЗУЛЬТАТЫ:")
+    print(f"   ✅ Действий: {len(actions)}")
+    print(f"   ✅ Объектов: {len(objects)}")
+    print(f"   ✅ Связей: {len(connections)}")
     
     # Возвращаем результат
     return {
@@ -1168,18 +993,13 @@ def simple_text_analysis(self, text):
         "model_objects": objects,
         "model_connections": connections,
         "analysis_metadata": {
-            "analysis_method": "real_text_analysis",
-            "analyzed_at": datetime.datetime.now().isoformat(),
+            "analysis_method": "simple_text_analysis",
             "text_length": len(text),
-            "lines_processed": len(lines),
             "actions_found": len(actions),
             "objects_found": len(objects),
-            "connections_created": len(connections),
-            "warning": "БЕЗ МОК-ДАННЫХ: все данные извлечены из текста" if actions else "ВНИМАНИЕ: действия не найдены в тексте"
+            "connections_created": len(connections)
         }
-    }
-
-def run_server(port=5001):
+    }def run_server(port=5001):
     """Запуск тестового сервера"""
     handler = TestAPIHandler
     
