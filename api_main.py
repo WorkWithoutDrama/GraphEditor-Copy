@@ -61,6 +61,10 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                 
                 print(f"📄 Текст запроса: {text[:100]}...")
                 print(f"📏 Длина: {len(text)} символов")
+                
+                # Получаем имя модели из запроса
+                model_name = data.get('model_name', 'unnamed_model')
+                print(f"🏷️  Имя модели: {model_name}")
                 sys.stdout.flush()
                 
                 # Шаг 1: Проверяем доступность LLM
@@ -129,8 +133,14 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                 print(f"• Связей: {len(model.get('model_connections', []))}")
                 sys.stdout.flush()
                 
-                # Отправляем ответ
-                response = {"success": True, "model": model}
+                # Сохраняем модель в файл
+                saved_filename = self.save_model_to_file(model, model_name)
+                if saved_filename:
+                    print(f"💾 Модель сохранена: {saved_filename}")
+                    response = {"success": True, "model": model, "saved_to": saved_filename}
+                else:
+                    print("⚠️  Не удалось сохранить модель")
+                    response = {"success": True, "model": model, "save_error": "Не удалось сохранить модель"}
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Access-Control-Allow-Origin", "*")
@@ -163,8 +173,14 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                 print(f"• Связей: {len(model.get('model_connections', []))}")
                 sys.stdout.flush()
                 
-                # Отправляем ответ
-                response = {"success": True, "model": model}
+                # Сохраняем модель в файл
+                saved_filename = self.save_model_to_file(model, model_name)
+                if saved_filename:
+                    print(f"💾 Модель сохранена: {saved_filename}")
+                    response = {"success": True, "model": model, "saved_to": saved_filename}
+                else:
+                    print("⚠️  Не удалось сохранить модель")
+                    response = {"success": True, "model": model, "save_error": "Не удалось сохранить модель"}
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Access-Control-Allow-Origin", "*")
@@ -467,6 +483,48 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
         
         return model
     
+    def save_model_to_file(self, model, model_name):
+        """Сохраняет модель в файл JSON в папке models/"""
+        try:
+            # Создаем папку models, если она не существует
+            models_dir = "models"
+            if not os.path.exists(models_dir):
+                os.makedirs(models_dir)
+                print(f"📁 Создана папка: {models_dir}")
+            
+            # Создаем безопасное имя файла
+            safe_name = "".join(c for c in model_name if c.isalnum() or c in "_- ").strip()
+            if not safe_name:
+                safe_name = "unnamed_model"
+            
+            filename = f"{models_dir}/{safe_name}.json"
+            
+            # Добавляем метаданные в модель
+            model_with_metadata = {
+                "version": "1.0",
+                "metadata": {
+                    "name": safe_name,
+                    "generated_at": datetime.datetime.now().isoformat(),
+                    "source": "api_main.py"
+                },
+                "model_actions": model.get("model_actions", []),
+                "model_objects": model.get("model_objects", []),
+                "model_connections": model.get("model_connections", [])
+            }
+            
+            # Сохраняем в файл
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(model_with_metadata, f, ensure_ascii=False, indent=2)
+            
+            print(f"💾 Модель сохранена в файл: {filename}")
+            print(f"📊 Размер: {os.path.getsize(filename)} байт")
+            
+            return filename
+            
+        except Exception as e:
+            print(f"❌ Ошибка при сохранении модели: {e}")
+            return None
+
     def simple_text_analysis(self, text):
         """Упрощенный анализ текста (используется если LLM недоступен)"""
         actions = []

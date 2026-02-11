@@ -296,12 +296,21 @@ class GraphManager {
             // Показываем индикатор обработки
             this.addMessage("⏳ Обрабатываю запрос...", 'bot');
             
-            const response = await this.generateModelFromText(text);
-            
+            // Запрашиваем имя модели у пользователя
+            const modelName = await this.promptForModelName();
+            if (!modelName) {
+                this.addMessage("❌ Отменено: не указано имя модели", 'bot');
+                return;
+            }
+
+            this.addMessage(`📝 Имя модели: ${modelName}`, 'bot');
+
+            const response = await this.generateModelFromText(text, modelName);
+
             if (response.success) {
                 this.addMessage("✅ Запрос обработан! Создаю графовую модель...", 'bot');
                 this.processGraphResponse(response);
-                this.addMessage("🎯 Модель создана! Граф загружен в редактор.", 'bot');
+                this.addMessage(`🎯 Модель "${modelName}" создана! Граф загружен в редактор.`, 'bot');
             } else {
                 this.addMessage(`⚠️ Ошибка: ${response.error || 'Не удалось обработать запрос'}`, 'bot');
             }
@@ -329,12 +338,21 @@ class GraphManager {
             this.addMessage(`✅ Файл загружен (${file.size} байт)`, 'bot');
             this.addMessage("⏳ Анализирую содержимое...", 'bot');
             
-            const response = await this.generateModelFromText(text.substring(0, 1000));
-            
+            // Запрашиваем имя модели у пользователя
+            const modelName = await this.promptForModelName();
+            if (!modelName) {
+                this.addMessage("❌ Отменено: не указано имя модели", 'bot');
+                return;
+            }
+
+            this.addMessage(`📝 Имя модели: ${modelName}`, 'bot');
+
+            const response = await this.generateModelFromText(text.substring(0, 1000), modelName);
+
             if (response.success) {
                 this.addMessage("✅ Файл проанализирован! Создаю графовую модель...", 'bot');
                 this.processGraphResponse(response);
-                this.addMessage("🎯 Модель создана! Граф загружен в редактор.", 'bot');
+                this.addMessage(`🎯 Модель "${modelName}" создана! Граф загружен в редактор.`, 'bot');
             } else {
                 this.addMessage("⚠️ Не удалось создать модель из файла.", 'bot');
             }
@@ -373,7 +391,7 @@ class GraphManager {
         });
     }
 
-    async generateModelFromText(text) {
+    async generateModelFromText(text, modelName = 'my_model') {
         if (!this.apiAvailable) {
             throw new Error('API недоступен');
         }
@@ -385,6 +403,7 @@ class GraphManager {
             console.log(`🔧 Текущий apiBaseUrl: ${this.apiBaseUrl}`);
             console.log(`📄 Длина текста: ${text.length} символов`);
             console.log(`📝 Текст (первые 200 символов): ${text.substring(0, 200)}...`);
+            console.log(`🏷️  Имя модели: ${modelName}`);
 
             console.log(`⏳ Отправляю запрос к API...`);
             const startTime = Date.now();
@@ -392,7 +411,10 @@ class GraphManager {
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text }),
+                body: JSON.stringify({
+                    text: text,
+                    model_name: modelName
+                }),
                 mode: 'cors'
             });
 
@@ -730,6 +752,13 @@ class GraphManager {
             }
             this.addMessage('Провайдер LLM изменен на Ollama', 'bot');
         }
+    }
+
+    async promptForModelName() {
+        return new Promise((resolve) => {
+            const modelName = prompt('📝 Введите имя для модели:', 'my_model');
+            resolve(modelName);
+        });
     }
 
     saveCurrentModel(filename = 'model') {
