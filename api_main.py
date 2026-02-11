@@ -100,11 +100,18 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 
                 try:
                     import urllib.request
+                    import socket
                     # Пробуем подключиться к Ollama health endpoint
-                    req = urllib.request.Request("http://localhost:11434/api/tags", timeout=5)
-                    with urllib.request.urlopen(req) as response:
-                        # Если дошли сюда - Ollama доступен
-                        print("   ✅ Ollama доступен")
+                    req = urllib.request.Request("http://localhost:11434/api/tags")
+                    # Устанавливаем timeout через socket
+                    socket.setdefaulttimeout(5)
+                    try:
+                        with urllib.request.urlopen(req) as response:
+                            # Если дошли сюда - Ollama доступен
+                            print("   ✅ Ollama доступен")
+                    finally:
+                        # Всегда сбрасываем timeout
+                        socket.setdefaulttimeout(None)
                 except Exception as e:
                     # Ollama не доступен - возвращаем ошибку
                     error_msg = f"Ollama не доступен: {e}"
