@@ -578,6 +578,61 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
             print(f"❌ Ошибка при сохранении модели: {e}")
             return None
 
+    def _convert_to_enhanced_structure(self, model):
+        """Преобразует старую структуру модели в новую улучшенную"""
+        print("   🔄 Преобразование структуры модели...")
+        
+        actions = model.get("model_actions", [])
+        enhanced_actions = []
+        
+        for i, action in enumerate(actions):
+            old_name = action.get("action_name", "неизвестное действие")
+            
+            # Анализируем старое название для извлечения контекста
+            old_name_lower = old_name.lower()
+            
+            # Определяем актора
+            action_actor = "Пользователь"  # по умолчанию
+            if "администратор" in old_name_lower:
+                action_actor = "Администратор"
+            elif "исполнитель" in old_name_lower:
+                action_actor = "Исполнитель"
+            elif "система" in old_name_lower:
+                action_actor = "Система"
+            
+            # Определяем действие
+            action_action = old_name_lower
+            
+            # Определяем место
+            action_place = "Система"  # по умолчанию
+            if "база данных" in old_name_lower:
+                action_place = "База данных"
+            elif "страница" in old_name_lower:
+                action_place = "Главная страница"
+            
+            # Создаем улучшенное действие
+            enhanced_action = {
+                "action_id": action.get("action_id", f"a{i+1:05d}"),
+                "action_actor": action_actor,
+                "action_action": action_action,
+                "action_place": action_place,
+                "action_links": action.get("action_links", {"manual": "", "API": "", "UI": ""}),
+                "source_line": 0,
+                "source_text": old_name
+            }
+            
+            enhanced_actions.append(enhanced_action)
+        
+        # Обновляем модель
+        model["model_actions"] = enhanced_actions
+        
+        # Обновляем метаданные анализа
+        if "analysis_metadata" in model:
+            model["analysis_metadata"]["structure_converted"] = True
+            model["analysis_metadata"]["converted_at"] = datetime.datetime.now().isoformat()
+        
+        return model
+
     def _merge_unique(self, list1, list2, key_func):
         """Объединяет два списка, убирая дубликаты по ключу"""
         if isinstance(key_func, str):
@@ -603,7 +658,150 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
         
         return merged
 
+    def enhanced_stream_analysis(self, text, model_name):
+        """
+        УЛУЧШЕННЫЙ потоковый анализ текста ТЗ с новой структурой
+        Минимум 500 символов на чанк, инкрементальное сохранение
+        """
+        print("🔄 ЗАПУСК УЛУЧШЕННОГО ПОТОКОВОГО АНАЛИЗА ТЗ")
+        print(f"📄 Общая длина текста: {len(text)} символов")
+        
+        # Разбиваем текст на абзацы
+        paragraphs = text.split('\n\n')
+        print(f"📋 Найдено абзацев: {len(paragraphs)}")
+        
+        # Объединяем абзацы в чанки (минимум 500 символов)
+        chunks = []
+        current_chunk = ""
+        current_length = 0
+        
+        for i, paragraph in enumerate(paragraphs):
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+                
+            # Проверяем, является ли абзац началом новой главы/раздела
+            is_new_section = False
+            if paragraph and paragraph[0].isdigit() and ('.' in paragraph[:10] or ')' in paragraph[:10]):
+                # Номерованный пункт (1., 2., 3. и т.д.)
+                is_new_section = True
+            elif paragraph.lower().startswith(('глава', 'раздел', 'часть', 'функция', 'требование')):
+                is_new_section = True
+            
+            # Если текущий чанк слишком мал, но это новый раздел - начинаем новый чанк
+            if current_length < 500 and is_new_section and current_chunk:
+                chunks.append(current_chunk)
+                print(f"   📦 Чанк {len(chunks)}: {len(current_chunk)} символов (новый раздел)")
+                current_chunk = ""
+                current_length = 0
+            
+            # Добавляем абзац к текущему чанку
+            if current_chunk:
+                current_chunk += "\n\n" + paragraph
+            else:
+                current_chunk = paragraph
+            current_length += len(paragraph)
+            
+            # Если достигли минимального размера - сохраняем чанк
+            if current_length >= 500:
+                chunks.append(current_chunk)
+                print(f"   📦 Чанк {len(chunks)}: {current_length} символов")
+                current_chunk = ""
+                current_length = 0
+        
+        # Добавляем последний чанк, если он не пустой
+        if current_chunk:
+            chunks.append(current_chunk)
+            print(f"   📦 Чанк {len(chunks)}: {len(current_chunk)} символов (последний)")
+        
+        print(f"🎯 Итого чанков для обработки: {len(chunks)}")
+        
+        # Обрабатываем каждый чанк и инкрементально сохраняем
+        total_actions = 0
+        total_objects = 0
+        total_connections = 0
+        
+        for i, chunk in enumerate(chunks):
+            print(f"\n🔍 ОБРАБОТКА ЧАНКА {i+1}/{len(chunks)}:")
+            print(f"   📏 Длина: {len(chunk)} символов")
+            print(f"   📝 Содержание (первые 100 символов): {chunk[:100]}...")
+            
+            # Анализируем чанк с УЛУЧШЕННЫМ методом
+            chunk_result = self.simple_text_analysis(chunk)
+            
+            # Проверяем и гарантируем новую структуру
+            actions = chunk_result.get("model_actions", [])
+            if actions and "action_actor" not in actions[0]:
+                print(f"   ⚠️  ПРЕДУПРЕЖДЕНИЕ: Использую преобразование структуры")
+                chunk_result = self._convert_to_enhanced_structure(chunk_result)
+            
+            # Извлекаем статистику
+            chunk_actions = len(actions)
+            chunk_objects = len(chunk_result.get("model_objects", []))
+            chunk_connections = len(chunk_result.get("model_connections", []))
+            
+            total_actions += chunk_actions
+            total_objects += chunk_objects
+            total_connections += chunk_connections
+            
+            print(f"   📊 Результаты чанка: {chunk_actions} действий, {chunk_objects} объектов, {chunk_connections} связей")
+            
+            # Показываем пример действия, если есть
+            if actions:
+                first_action = actions[0]
+                print(f"   📝 Пример: {first_action.get('action_actor', '?')} {first_action.get('action_action', '?')} {first_action.get('action_place', '?')}")
+            
+            # Инкрементально сохраняем модель
+            append = (i > 0)  # Первый чанк создает файл, остальные добавляют
+            saved_filename = self.save_model_to_file(chunk_result, model_name, append=append)
+            
+            if saved_filename:
+                print(f"   💾 Сохранено в: {saved_filename} (чанк {i+1})")
+            else:
+                print(f"   ❌ Ошибка сохранения чанка {i+1}")
+            
+            # Небольшая пауза между чанками для наглядности
+            if i < len(chunks) - 1:
+                print("   ⏳ Переход к следующему чанку...")
+        
+        print(f"\n✅ УЛУЧШЕННЫЙ ПОТОКОВЫЙ АНАЛИЗ ЗАВЕРШЕН!")
+        print(f"📊 ИТОГО ОБРАБОТАНО:")
+        print(f"   • Чанков: {len(chunks)}")
+        print(f"   • Действий: {total_actions}")
+        print(f"   • Объектов: {total_objects}")
+        print(f"   • Связей: {total_connections}")
+        
+        # Читаем финальную модель для возврата
+        try:
+            if saved_filename and os.path.exists(saved_filename):
+                with open(saved_filename, 'r', encoding='utf-8') as f:
+                    final_model = json.load(f)
+                
+                # Добавляем общую статистику
+                final_model["metadata"]["total_chunks"] = len(chunks)
+                final_model["metadata"]["total_actions"] = total_actions
+                final_model["metadata"]["total_objects"] = total_objects
+                final_model["metadata"]["total_connections"] = total_connections
+                final_model["metadata"]["analysis_method"] = "enhanced_stream_analysis"
+                
+                # Пересохраняем с обновленными метаданными
+                with open(saved_filename, 'w', encoding='utf-8') as f:
+                    json.dump(final_model, f, ensure_ascii=False, indent=2)
+                
+                print(f"\n💾 ФИНАЛЬНАЯ МОДЕЛЬ СОХРАНЕНА: {saved_filename}")
+                
+                return final_model
+        except Exception as e:
+            print(f"⚠️  Ошибка чтения финальной модели: {e}")
+        
+        # Возвращаем последний результат как запасной вариант
+        return chunk_result
+
     def stream_text_analysis(self, text, model_name):
+        """Совместимость: вызывает улучшенную версию"""
+        return self.enhanced_stream_analysis(text, model_name)
+
+    def enhanced_stream_analysis(self, text, model_name):
         """
         Потоковый анализ текста ТЗ по частям (минимум 500 символов)
         Сохраняет результаты инкрементально
@@ -671,8 +869,16 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
             print(f"   📏 Длина: {len(chunk)} символов")
             print(f"   📝 Содержание (первые 100 символов): {chunk[:100]}...")
             
-            # Анализируем чанк
+            # Анализируем чанк с УЛУЧШЕННЫМ методом
             chunk_result = self.simple_text_analysis(chunk)
+            
+            # Проверяем, что результат содержит новую структуру
+            if chunk_result.get("model_actions"):
+                first_action = chunk_result["model_actions"][0]
+                if "action_actor" not in first_action:
+                    print(f"   ⚠️  ПРЕДУПРЕЖДЕНИЕ: Результат не содержит улучшенную структуру!")
+                    # Принудительно преобразуем к новой структуре
+                    self._convert_to_enhanced_structure(chunk_result)
             
             # Извлекаем статистику
             chunk_actions = len(chunk_result.get("model_actions", []))
