@@ -95,9 +95,41 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 prompt = self.generate_llm_prompt(text)
                 print(f"   📝 Промпт для LLM (первые 200 символов): {prompt[:200]}...")
                 
-                # 2. Проверяем доступность LLM
-                print("   🤖 Проверяю доступность LLM...")
-                llm_response = self.query_llm("test")
+                # 2. Проверяем доступность LLM (проверяем эндпоинт здоровья Ollama)
+                print("   🤖 Проверяю доступность Ollama...")
+                
+                try:
+                    import urllib.request
+                    # Пробуем подключиться к Ollama health endpoint
+                    req = urllib.request.Request("http://localhost:11434/api/tags", timeout=5)
+                    with urllib.request.urlopen(req) as response:
+                        # Если дошли сюда - Ollama доступен
+                        print("   ✅ Ollama доступен")
+                except Exception as e:
+                    # Ollama не доступен - возвращаем ошибку
+                    error_msg = f"Ollama не доступен: {e}"
+                    print(f"   ❌ {error_msg}")
+                    
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self._set_cors_headers()
+                    self.end_headers()
+                    
+                    error_response = {
+                        "success": False,
+                        "status": 503,
+                        "error": "Ollama не доступен",
+                        "details": "Для анализа ТЗ требуется запущенный Ollama с моделью llama3.2",
+                        "help": [
+                            "1. Установите Ollama: https://ollama.ai/",
+                            "2. Запустите: ollama serve",
+                            "3. Скачайте модель: ollama pull llama3.2",
+                            "4. Попробуйте снова"
+                        ]
+                    }
+                    
+                    self.wfile.write(json.dumps(error_response, indent=2, ensure_ascii=False).encode())
+                    return
                 
                 if not llm_response["success"]:
                     # LLM не доступен - возвращаем ошибку
@@ -127,7 +159,7 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                     return
                 
                 # 3. LLM доступен - отправляем реальный запрос
-                print("   🤖 LLM доступен, отправляю запрос для анализа ТЗ...")
+                print("   🤖 Отправляю запрос к LLM для анализа ТЗ...")
                 llm_response = self.query_llm(prompt)
                 
                 actions_data = []
@@ -267,10 +299,12 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
     
     def query_llm(self, prompt):
         """
-        Отправляет запрос к Ollama LLM
+        Отправляет запрос к Ollama LLM (без внешних зависимостей)
         """
         try:
-            import requests
+            # Используем встроенные модули
+            import urllib.request
+            import json as json_module
             
             ollama_url = "http://localhost:11434/api/generate"
             
@@ -284,21 +318,32 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 }
             }
             
-            response = requests.post(ollama_url, json=payload, timeout=30)
+            # Создаем HTTP запрос
+            data = json_module.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(
+                ollama_url,
+                data=data,
+                headers={'Content-Type': 'application/json'},
+                method='POST'
+            )
             
-            if response.status_code == 200:
-                result = response.json()
+            # Отправляем запрос
+            with urllib.request.urlopen(req, timeout=30) as response:
+                response_data = response.read().decode('utf-8')
+                result = json_module.loads(response_data)
+                
                 return {
                     "success": True,
                     "response": result.get("response", "")
                 }
-            else:
-                print(f"❌ Ошибка LLM: {response.status_code}")
-                return {
-                    "success": False,
-                    "error": f"LLM ошибка: {response.status_code}"
-                }
                 
+        except urllib.error.URLError as e:
+            # Ollama не запущен или недоступен
+            print(f"❌ Ollama недоступен: {e}")
+            return {
+                "success": False,
+                "error": f"Ollama недоступен: {e}"
+            }
         except Exception as e:
             print(f"❌ Ошибка при запросе к LLM: {e}")
             return {
