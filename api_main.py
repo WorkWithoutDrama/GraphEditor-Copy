@@ -104,13 +104,15 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                     error_msg = "LLM (Ollama) не доступен. Запустите Ollama и модель llama3.2"
                     print(f"   ❌ {error_msg}")
                     
-                    self.send_response(503)  # Service Unavailable
+                    # Всегда возвращаем 200 OK, ошибки в JSON
+                    self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self._set_cors_headers()
                     self.end_headers()
                     
                     error_response = {
                         "success": False,
+                        "status": 503,  # HTTP статус в JSON
                         "error": error_msg,
                         "details": "Для анализа ТЗ требуется запущенный Ollama с моделью llama3.2",
                         "help": [
@@ -149,9 +151,15 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                     else:
                         print("   ❌ LLM не вернул корректные действия")
                         
-                        # Возвращаем ошибку парсинга
+                        # Возвращаем ошибку парсинга (всегда 200 OK)
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/json")
+                        self._set_cors_headers()
+                        self.end_headers()
+                        
                         error_response = {
                             "success": False,
+                            "status": 400,  # Bad Request в JSON
                             "error": "LLM вернул некорректный формат",
                             "details": "Ollama не смог проанализировать ТЗ и вернул неверный формат",
                             "llm_response_preview": llm_response["response"][:500]
@@ -162,9 +170,15 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 else:
                     print(f"   ❌ Ошибка LLM: {llm_response.get('error', 'неизвестно')}")
                     
-                    # Возвращаем ошибку LLM
+                    # Возвращаем ошибку LLM (всегда 200 OK)
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self._set_cors_headers()
+                    self.end_headers()
+                    
                     error_response = {
                         "success": False,
+                        "status": 500,  # Internal Server Error в JSON
                         "error": "Ошибка LLM",
                         "details": llm_response.get("error", "Неизвестная ошибка LLM")
                     }
