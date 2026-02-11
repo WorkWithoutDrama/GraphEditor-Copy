@@ -1177,7 +1177,9 @@ def simple_text_analysis(self, text):
             "connections_created": len(connections),
             "warning": "БЕЗ МОК-ДАННЫХ: все данные извлечены из текста" if actions else "ВНИМАНИЕ: действия не найдены в тексте"
         }
-    }def run_server(port=5001):
+    }
+
+def run_server(port=5001):
     """Запуск тестового сервера"""
     handler = TestAPIHandler
     
