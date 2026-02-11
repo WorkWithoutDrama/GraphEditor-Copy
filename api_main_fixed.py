@@ -1,3 +1,4 @@
+<COMPRESSED>
 #!/usr/bin/env python3
 """
 Минимальный API сервер для Graph Editor
@@ -310,3 +311,4 @@ if __name__ == "__main__":
     print("=" * 50)
     print("Это сообщение ДОЛЖНО быть видно сразу!")
     run_server()
+</COMPRESSED>
