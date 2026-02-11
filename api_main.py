@@ -78,8 +78,8 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                     print("⚠️  Использую упрощенный анализ текста")
                     sys.stdout.flush()
                     
-                    # Используем упрощенный анализ если LLM недоступен
-                    model = self.simple_text_analysis(text)
+                    # Используем потоковый анализ если LLM недоступен
+                    model = self.stream_text_analysis(text, model_name)
                 else:
                     print(f"✅ LLM ДОСТУПЕН: {llm_status}")
                     print("🔄 ЗАПУСКАЮ LLM ДЛЯ АНАЛИЗА ТЗ...")
@@ -108,7 +108,7 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                             print("❌ НЕ УДАЛОСЬ РАСПАРСИТЬ ОТВЕТ LLМ")
                             print("⚠️  Использую упрощенный анализ")
                             sys.stdout.flush()
-                            model = self.simple_text_analysis(text)
+                            model = self.stream_text_analysis(text, model_name)
                         else:
                             print("🎯 МОДЕЛЬ СГЕНЕРИРОВАНА LLM!")
                             sys.stdout.flush()
@@ -116,7 +116,7 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
                         print(f"❌ ОШИБКА LLM: {llm_response['error']}")
                         print("⚠️  Использую упрощенный анализ")
                         sys.stdout.flush()
-                        model = self.simple_text_analysis(text)
+                        model = self.stream_text_analysis(text, model_name)
                 
                 # ВЫВОДИМ JSON - ПОСТРОЧНО И С ПРИНУДИТЕЛЬНЫМ FLUSH
                 print("🎯 СГЕНЕРИРОВАННАЯ МОДЕЛЬ:")
@@ -483,8 +483,15 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
         
         return model
     
-    def save_model_to_file(self, model, model_name):
-        """Сохраняет модель в файл JSON в папке models/"""
+    def save_model_to_file(self, model, model_name, append=False):
+        """
+        Сохраняет модель в файл JSON в папке models/
+        
+        Args:
+            model: словарь с моделью
+            model_name: имя модели (имя файла)
+            append: если True, добавляет к существующему файлу
+        """
         try:
             # Создаем папку models, если она не существует
             models_dir = "models"
@@ -499,21 +506,67 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
             
             filename = f"{models_dir}/{safe_name}.json"
             
-            # Добавляем метаданные в модель
-            model_with_metadata = {
-                "version": "1.0",
-                "metadata": {
-                    "name": safe_name,
-                    "generated_at": datetime.datetime.now().isoformat(),
-                    "source": "api_main.py"
-                },
-                "model_actions": model.get("model_actions", []),
-                "model_objects": model.get("model_objects", []),
-                "model_connections": model.get("model_connections", [])
-            }
+            if append and os.path.exists(filename):
+                # Читаем существующую модель
+                try:
+                    with open(filename, 'r', encoding='utf-8') as f:
+                        existing_data = json.load(f)
+                    
+                    # Объединяем данные
+                    existing_actions = existing_data.get("model_actions", [])
+                    existing_objects = existing_data.get("model_objects", [])
+                    existing_connections = existing_data.get("model_connections", [])
+                    
+                    # Убираем дубликаты по ID
+                    new_actions = model.get("model_actions", [])
+                    new_objects = model.get("model_objects", [])
+                    new_connections = model.get("model_connections", [])
+                    
+                    # Объединяем уникальные элементы
+                    combined_actions = self._merge_unique(existing_actions, new_actions, "action_id")
+                    combined_objects = self._merge_unique(existing_objects, new_objects, "object_id")
+                    combined_connections = self._merge_unique(existing_connections, new_connections, lambda x: f"{x.get('connection_out')}-{x.get('connection_in')}")
+                    
+                    # Обновляем метаданные
+                    existing_data["metadata"]["updated_at"] = datetime.datetime.now().isoformat()
+                    existing_data["metadata"]["chunks_processed"] = existing_data["metadata"].get("chunks_processed", 0) + 1
+                    
+                    model_with_metadata = {
+                        "version": "1.0",
+                        "metadata": existing_data["metadata"],
+                        "model_actions": combined_actions,
+                        "model_objects": combined_objects,
+                        "model_connections": combined_connections
+                    }
+                    
+                    print(f"📝 Добавляю к существующей модели (чанков: {existing_data['metadata'].get('chunks_processed', 0)})")
+                    
+                except Exception as e:
+                    print(f"⚠️  Ошибка при чтении существующего файла: {e}")
+                    append = False
+            
+            if not append:
+                # Создаем новую модель с метаданными
+                model_with_metadata = {
+                    "version": "1.0",
+                    "metadata": {
+                        "name": safe_name,
+                        "generated_at": datetime.datetime.now().isoformat(),
+                        "source": "api_main.py",
+                        "chunks_processed": 1
+                    },
+                    "model_actions": model.get("model_actions", []),
+                    "model_objects": model.get("model_objects", []),
+                    "model_connections": model.get("model_connections", [])
+                }
             
             # Сохраняем в файл
-            with open(filename, 'w', encoding='utf-8') as f:
+            mode = "a" if append else "w"
+            with open(filename, mode, encoding='utf-8') as f:
+                if append:
+                    # Перезаписываем весь файл
+                    f.seek(0)
+                    f.truncate()
                 json.dump(model_with_metadata, f, ensure_ascii=False, indent=2)
             
             print(f"💾 Модель сохранена в файл: {filename}")
@@ -524,6 +577,156 @@ class TestAPIHandler(http.server.BaseHTTPRequestHandler):
         except Exception as e:
             print(f"❌ Ошибка при сохранении модели: {e}")
             return None
+
+    def _merge_unique(self, list1, list2, key_func):
+        """Объединяет два списка, убирая дубликаты по ключу"""
+        if isinstance(key_func, str):
+            # Если key_func - это строка, используем ее как ключ
+            key_func = lambda x: x.get(key_func)
+        
+        merged = []
+        seen_keys = set()
+        
+        # Добавляем элементы из первого списка
+        for item in list1:
+            key = key_func(item)
+            if key not in seen_keys:
+                seen_keys.add(key)
+                merged.append(item)
+        
+        # Добавляем элементы из второго списка
+        for item in list2:
+            key = key_func(item)
+            if key not in seen_keys:
+                seen_keys.add(key)
+                merged.append(item)
+        
+        return merged
+
+    def stream_text_analysis(self, text, model_name):
+        """
+        Потоковый анализ текста ТЗ по частям (минимум 500 символов)
+        Сохраняет результаты инкрементально
+        """
+        print("🔄 ЗАПУСК ПОТОКОВОГО АНАЛИЗА ТЗ")
+        print(f"📄 Общая длина текста: {len(text)} символов")
+        
+        # Разбиваем текст на абзацы
+        paragraphs = text.split('\n\n')
+        print(f"📋 Найдено абзацев: {len(paragraphs)}")
+        
+        # Объединяем абзацы в чанки (минимум 500 символов)
+        chunks = []
+        current_chunk = ""
+        current_length = 0
+        
+        for i, paragraph in enumerate(paragraphs):
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+                
+            # Проверяем, является ли абзац началом новой главы/раздела
+            is_new_section = False
+            if paragraph and paragraph[0].isdigit() and ('.' in paragraph[:10] or ')' in paragraph[:10]):
+                # Номерованный пункт (1., 2., 3. и т.д.)
+                is_new_section = True
+            elif paragraph.lower().startswith(('глава', 'раздел', 'часть', 'функция', 'требование')):
+                is_new_section = True
+            
+            # Если текущий чанк слишком мал, но это новый раздел - начинаем новый чанк
+            if current_length < 500 and is_new_section and current_chunk:
+                chunks.append(current_chunk)
+                print(f"   📦 Чанк {len(chunks)}: {len(current_chunk)} символов (новый раздел)")
+                current_chunk = ""
+                current_length = 0
+            
+            # Добавляем абзац к текущему чанку
+            if current_chunk:
+                current_chunk += "\n\n" + paragraph
+            else:
+                current_chunk = paragraph
+            current_length += len(paragraph)
+            
+            # Если достигли минимального размера - сохраняем чанк
+            if current_length >= 500:
+                chunks.append(current_chunk)
+                print(f"   📦 Чанк {len(chunks)}: {current_length} символов")
+                current_chunk = ""
+                current_length = 0
+        
+        # Добавляем последний чанк, если он не пустой
+        if current_chunk:
+            chunks.append(current_chunk)
+            print(f"   📦 Чанк {len(chunks)}: {len(current_chunk)} символов (последний)")
+        
+        print(f"🎯 Итого чанков для обработки: {len(chunks)}")
+        
+        # Обрабатываем каждый чанк и инкрементально сохраняем
+        total_actions = 0
+        total_objects = 0
+        total_connections = 0
+        
+        for i, chunk in enumerate(chunks):
+            print(f"\n🔍 ОБРАБОТКА ЧАНКА {i+1}/{len(chunks)}:")
+            print(f"   📏 Длина: {len(chunk)} символов")
+            print(f"   📝 Содержание (первые 100 символов): {chunk[:100]}...")
+            
+            # Анализируем чанк
+            chunk_result = self.simple_text_analysis(chunk)
+            
+            # Извлекаем статистику
+            chunk_actions = len(chunk_result.get("model_actions", []))
+            chunk_objects = len(chunk_result.get("model_objects", []))
+            chunk_connections = len(chunk_result.get("model_connections", []))
+            
+            total_actions += chunk_actions
+            total_objects += chunk_objects
+            total_connections += chunk_connections
+            
+            print(f"   📊 Результаты чанка: {chunk_actions} действий, {chunk_objects} объектов, {chunk_connections} связей")
+            
+            # Инкрементально сохраняем модель
+            append = (i > 0)  # Первый чанк создает файл, остальные добавляют
+            saved_filename = self.save_model_to_file(chunk_result, model_name, append=append)
+            
+            if saved_filename:
+                print(f"   💾 Сохранено в: {saved_filename} (чанк {i+1})")
+            else:
+                print(f"   ❌ Ошибка сохранения чанка {i+1}")
+            
+            # Небольшая пауза между чанками для наглядности
+            if i < len(chunks) - 1:
+                print("   ⏳ Переход к следующему чанку...")
+        
+        print(f"\n✅ ПОТОКОВЫЙ АНАЛИЗ ЗАВЕРШЕН!")
+        print(f"📊 ИТОГО ОБРАБОТАНО:")
+        print(f"   • Чанков: {len(chunks)}")
+        print(f"   • Действий: {total_actions}")
+        print(f"   • Объектов: {total_objects}")
+        print(f"   • Связей: {total_connections}")
+        
+        # Читаем финальную модель для возврата
+        try:
+            if saved_filename and os.path.exists(saved_filename):
+                with open(saved_filename, 'r', encoding='utf-8') as f:
+                    final_model = json.load(f)
+                
+                # Добавляем общую статистику
+                final_model["metadata"]["total_chunks"] = len(chunks)
+                final_model["metadata"]["total_actions"] = total_actions
+                final_model["metadata"]["total_objects"] = total_objects
+                final_model["metadata"]["total_connections"] = total_connections
+                
+                # Пересохраняем с обновленными метаданными
+                with open(saved_filename, 'w', encoding='utf-8') as f:
+                    json.dump(final_model, f, ensure_ascii=False, indent=2)
+                
+                return final_model
+        except Exception as e:
+            print(f"⚠️  Ошибка чтения финальной модели: {e}")
+        
+        # Возвращаем последний результат как запасной вариант
+        return chunk_result
 
     def simple_text_analysis(self, text):
         """Реальный анализ текста ТЗ (используется если LLM недоступен)"""
