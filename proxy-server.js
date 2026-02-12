@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PROXY_PORT = 3000;
-const API_HOST = 'localhost';
+const API_HOST = '127.0.0.1';
 
 // Читаем порт API из файла с повторными попытками
 let API_PORT = null;
