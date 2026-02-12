@@ -138,33 +138,6 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps(error_response, indent=2, ensure_ascii=False).encode())
                     return
                 
-                if not llm_response["success"]:
-                    # LLM не доступен - возвращаем ошибку
-                    error_msg = "LLM (Ollama) не доступен. Запустите Ollama и модель llama3.2"
-                    print(f"   ❌ {error_msg}")
-                    
-                    # Всегда возвращаем 200 OK, ошибки в JSON
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
-                    self._set_cors_headers()
-                    self.end_headers()
-                    
-                    error_response = {
-                        "success": False,
-                        "status": 503,  # HTTP статус в JSON
-                        "error": error_msg,
-                        "details": "Для анализа ТЗ требуется запущенный Ollama с моделью llama3.2",
-                        "help": [
-                            "1. Установите Ollama: https://ollama.ai/",
-                            "2. Запустите: ollama serve",
-                            "3. Скачайте модель: ollama pull llama3.2",
-                            "4. Попробуйте снова"
-                        ]
-                    }
-                    
-                    self.wfile.write(json.dumps(error_response, indent=2, ensure_ascii=False).encode())
-                    return
-                
                 # 3. LLM доступен - отправляем реальный запрос
                 print("   🤖 Отправляю запрос к LLM для анализа ТЗ...")
                 llm_response = self.query_llm(prompt)
