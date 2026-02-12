@@ -13,14 +13,66 @@ const path = require('path');
 const PROXY_PORT = 3000;
 const API_HOST = 'localhost';
 
-// Читаем порт API из файла
-let API_PORT = 5005;
-try {
-    const apiPortData = fs.readFileSync('api_port.txt', 'utf8');
-    API_PORT = parseInt(apiPortData.trim());
-    console.log(`📡 Прочитан порт API из файла: ${API_PORT}`);
-} catch (err) {
-    console.log(`⚠️  Не удалось прочитать api_port.txt, использую порт по умолчанию: ${API_PORT}`);
+// Читаем порт API из файла с повторными попытками
+let API_PORT = null;
+let retryCount = 0;
+const maxRetries = 10;
+
+function readApiPort() {
+    try {
+        if (fs.existsSync('api_port.txt')) {
+            const apiPortData = fs.readFileSync('api_port.txt', 'utf8');
+            const port = parseInt(apiPortData.trim());
+
+            if (port && port > 0 && port < 65536) {
+                API_PORT = port;
+                console.log(`📡 Прочитан порт API из файла: ${API_PORT}`);
+                return true;
+            } else {
+                console.log(`⚠️  Неверный порт в файле: ${apiPortData}`);
+            }
+        } else {
+            console.log(`📝 Файл api_port.txt не найден, жду... (попытка ${retryCount + 1}/${maxRetries})`);
+        }
+    } catch (err) {
+        console.log(`⚠️  Ошибка чтения api_port.txt: ${err.message}`);
+    }
+
+    retryCount++;
+    return false;
+}
+
+// Пытаемся прочитать порт несколько раз
+while (!API_PORT && retryCount < maxRetries) {
+    if (readApiPort()) {
+        break;
+    }
+    if (retryCount < maxRetries) {
+        require('child_process').execSync('sleep 1');
+    }
+}
+
+// Если не удалось прочитать, используем умный поиск порта
+if (!API_PORT) {
+    console.log('🔍 Ищу API на стандартных портах...');
+    const portsToTry = [5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009];
+
+    for (const port of portsToTry) {
+        try {
+            require('child_process').execSync(`curl -s http://localhost:${port}/api/health > /dev/null`);
+            API_PORT = port;
+            console.log(`✅ Найден API на порту: ${API_PORT}`);
+            break;
+        } catch (err) {
+            // Порт не отвечает, пробуем следующий
+        }
+    }
+}
+
+// Если все еще не нашли, используем порт по умолчанию
+if (!API_PORT) {
+    API_PORT = 5005;
+    console.log(`⚠️  Не удалось определить порт API, использую: ${API_PORT}`);
 }
 
 console.log(`✅ Прокси сервер запущен на порту ${PROXY_PORT}`);
