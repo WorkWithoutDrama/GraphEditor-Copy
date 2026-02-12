@@ -374,14 +374,34 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                         return actions
                 
                 # Проверяем другие возможные структуры
-                print(f"⚠️  LLM вернул объект: {list(data.keys())}")
+                print(f"⚠️  LLM вернул объект с ключами: {list(data.keys())}")
                 
-                # Пробуем найти действия в других полях
+                # Пробуем найти массив действий в разных полях
                 for key, value in data.items():
                     if isinstance(value, list) and len(value) > 0:
-                        if isinstance(value[0], dict) and ("actor" in value[0] or "action" in value[0]):
-                            print(f"✅ Найдены действия в поле '{key}': {len(value)} элементов")
-                            return value
+                        # Проверяем, является ли это массивом действий
+                        first_item = value[0]
+                        if isinstance(first_item, dict):
+                            # Проверяем различные форматы действий
+                            if ("action_actor" in first_item or "actor" in first_item or 
+                                "action_action" in first_item or "action" in first_item):
+                                print(f"✅ Найден массив действий в поле '{key}': {len(value)} элементов")
+                                return value
+                            # Проверяем вложенные структуры
+                            for sub_key, sub_value in first_item.items():
+                                if isinstance(sub_value, list) and len(sub_value) > 0:
+                                    sub_first = sub_value[0]
+                                    if isinstance(sub_first, dict) and ("action_actor" in sub_first or "actor" in sub_first):
+                                        print(f"✅ Найден вложенный массив действий в '{key}.{sub_key}': {len(sub_value)} элементов")
+                                        return sub_value
+                
+                # Если не нашли напрямую, ищем любые массивы объектов
+                for key, value in data.items():
+                    if isinstance(value, list) and len(value) > 0:
+                        print(f"⚠️  Найден массив в поле '{key}' (не проверена структура): {len(value)} элементов")
+                        print(f"   Первый элемент: {json.dumps(value[0], ensure_ascii=False)[:100]}...")
+                        # Возвращаем даже если структура не идеальная
+                        return value
                 
                 print(f"❌ LLM вернул объект без узнаваемой структуры действий")
                 return []
