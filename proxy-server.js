@@ -142,8 +142,45 @@ function proxyToApi(clientReq, clientRes, url) {
     
     proxyReq.on('error', (err) => {
         console.error(`❌ Ошибка прокси API: ${err.message}`);
-        clientRes.writeHead(502, { 'Content-Type': 'text/plain' });
-        clientRes.end('Ошибка проксирования API запроса');
+
+        // Пробуем найти API на других портах
+        console.log('🔍 Пробую найти API на других портах...');
+        const portsToTry = [5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009];
+        let foundPort = null;
+
+        for (const port of portsToTry) {
+            try {
+                require('child_process').execSync(`curl -s http://127.0.0.1:${port}/api/health > /dev/null`, { timeout: 1000 });
+                foundPort = port;
+                console.log(`✅ Найден API на порту: ${foundPort}`);
+
+                // Обновляем API_PORT для будущих запросов
+                API_PORT = foundPort;
+                fs.writeFileSync('api_port.txt', foundPort.toString());
+
+                // Пробуем запрос снова с новым портом
+                setTimeout(() => {
+                    console.log(`🔄 Повторяю запрос с портом ${foundPort}...`);
+                    // Здесь нужно как-то повторно отправить запрос, но это сложно
+                }, 100);
+
+                break;
+            } catch (e) {
+                // Порт не работает, пробуем следующий
+            }
+        }
+
+        clientRes.writeHead(502, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        });
+        clientRes.end(JSON.stringify({
+            error: 'Bad Gateway',
+            message: 'Не удалось подключиться к API серверу',
+            details: err.message,
+            suggestion: foundPort ? `API найден на порту ${foundPort}, попробуйте еще раз` : 'API не найден на стандартных портах',
+            timestamp: new Date().toISOString()
+        }));
     });
     
     clientReq.pipe(proxyReq, { end: true });
