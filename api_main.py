@@ -346,13 +346,47 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 response = response[:-3]
             
             # Парсим JSON
-            actions = json.loads(response)
+            data = json.loads(response)
             
-            if isinstance(actions, list):
-                print(f"✅ Распарсено {len(actions)} действий из LLM")
-                return actions
+            # Проверяем разные форматы ответов LLM
+            if isinstance(data, list):
+                # Формат 1: массив действий
+                print(f"✅ Распарсено {len(data)} действий из LLM (формат: массив)")
+                return data
+            elif isinstance(data, dict):
+                # Формат 2: объект с полями
+                if "action_actor" in data and "action_action" in data:
+                    # Преобразуем в массив действий
+                    actions = []
+                    if isinstance(data["action_actor"], list) and isinstance(data["action_action"], list):
+                        # Создаем действия на основе actor и action
+                        for i in range(min(len(data["action_actor"]), len(data["action_action"]))):
+                            action = {
+                                "actor": data["action_actor"][i] if i < len(data["action_actor"]) else "неизвестно",
+                                "action": data["action_action"][i] if i < len(data["action_action"]) else "действие",
+                                "place": "система",
+                                "init_states": [],
+                                "final_states": []
+                            }
+                            actions.append(action)
+                        
+                        print(f"✅ Распарсено {len(actions)} действий из LLM (формат: объект -> преобразован)")
+                        return actions
+                
+                # Проверяем другие возможные структуры
+                print(f"⚠️  LLM вернул объект: {list(data.keys())}")
+                
+                # Пробуем найти действия в других полях
+                for key, value in data.items():
+                    if isinstance(value, list) and len(value) > 0:
+                        if isinstance(value[0], dict) and ("actor" in value[0] or "action" in value[0]):
+                            print(f"✅ Найдены действия в поле '{key}': {len(value)} элементов")
+                            return value
+                
+                print(f"❌ LLM вернул объект без узнаваемой структуры действий")
+                return []
             else:
-                print(f"❌ LLM вернул не массив: {type(actions)}")
+                print(f"❌ LLM вернул нераспознанный формат: {type(data)}")
                 return []
                 
         except json.JSONDecodeError as e:
