@@ -1,0 +1,177 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "my_model_2026-02-13_09-47-04_part2",
+    "generated_at": "2026-02-13T12:47:38.817026",
+    "source": "api_main.py",
+    "chunks_processed": 1
+  },
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_actor": "пользователь",
+      "action_action": "нажимает кнопку 'Новая сделка'",
+      "action_place": "в разделе 'Сделки'",
+      "action_name": "пользователь нажимает кнопку 'Новая сделка' (в разделе 'Сделки')",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00001",
+        "label": "пользователь нажимает кнопку 'Новая сделка' (в разделе 'Сделки')",
+        "type": "action",
+        "actor": "пользователь",
+        "action": "нажимает кнопку 'Новая сделка'",
+        "place": "в разделе 'Сделки'"
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_actor": "пользователь",
+      "action_action": "заполняет обязательные поля",
+      "action_place": "в форме для ввода данных",
+      "action_name": "пользователь заполняет обязательные поля (в форме для ввода данных)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00002",
+        "label": "пользователь заполняет обязательные поля (в форме для ввода данных)",
+        "type": "action",
+        "actor": "пользователь",
+        "action": "заполняет обязательные поля",
+        "place": "в форме для ввода данных"
+      }
+    },
+    {
+      "action_id": "a00003",
+      "action_actor": "пользователь",
+      "action_action": "нажимает кнопку 'Сохранить'",
+      "action_place": "в форме для ввода данных",
+      "action_name": "пользователь нажимает кнопку 'Сохранить' (в форме для ввода данных)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00003",
+        "label": "пользователь нажимает кнопку 'Сохранить' (в форме для ввода данных)",
+        "type": "action",
+        "actor": "пользователь",
+        "action": "нажимает кнопку 'Сохранить'",
+        "place": "в форме для ввода данных"
+      }
+    },
+    {
+      "action_id": "a00004",
+      "action_actor": "пользователь",
+      "action_action": "нажимает кнопку 'Открыть'",
+      "action_place": "в разделе 'Сделки'",
+      "action_name": "пользователь нажимает кнопку 'Открыть' (в разделе 'Сделки')",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00004",
+        "label": "пользователь нажимает кнопку 'Открыть' (в разделе 'Сделки')",
+        "type": "action",
+        "actor": "пользователь",
+        "action": "нажимает кнопку 'Открыть'",
+        "place": "в разделе 'Сделки'"
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00001",
+      "object_name": "сделка",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не создана"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "создана"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "заполнена"
+        },
+        {
+          "state_id": "s00004",
+          "state_name": "сохранена"
+        },
+        {
+          "state_id": "s00005",
+          "state_name": "открыта"
+        }
+      ]
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_id": "c00001",
+      "connection_out": "o00001s00001",
+      "connection_in": "a00001",
+      "description": "сделка не создана → пользователь нажимает кнопку 'Новая сделка'",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00002",
+      "connection_out": "a00001",
+      "connection_in": "o00001s00002",
+      "description": "пользователь нажимает кнопку 'Новая сделка' → сделка создана",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00003",
+      "connection_out": "o00001s00002",
+      "connection_in": "a00002",
+      "description": "сделка создана → пользователь заполняет обязательные поля",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00004",
+      "connection_out": "a00002",
+      "connection_in": "o00001s00003",
+      "description": "пользователь заполняет обязательные поля → сделка заполнена",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00005",
+      "connection_out": "o00001s00003",
+      "connection_in": "a00003",
+      "description": "сделка заполнена → пользователь нажимает кнопку 'Сохранить'",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00006",
+      "connection_out": "a00003",
+      "connection_in": "o00001s00004",
+      "description": "пользователь нажимает кнопку 'Сохранить' → сделка сохранена",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00007",
+      "connection_out": "o00001s00004",
+      "connection_in": "a00004",
+      "description": "сделка сохранена → пользователь нажимает кнопку 'Открыть'",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00008",
+      "connection_out": "a00004",
+      "connection_in": "o00001s00005",
+      "description": "пользователь нажимает кнопку 'Открыть' → сделка открыта",
+      "type": "results_in"
+    }
+  ]
+}

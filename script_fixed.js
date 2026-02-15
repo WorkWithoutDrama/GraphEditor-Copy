@@ -10,7 +10,18 @@ let stateCounter = 1;
 window.addEventListener('DOMContentLoaded', () => {
     renderGraph({ nodes: [], edges: [] });
     // Инициализируем GraphManager
-    graphManager = new GraphManager();
+    try {
+        graphManager = new GraphManager();
+        console.log('✅ GraphManager инициализирован');
+
+        // Проверяем, что кнопка нашлась
+        if (!graphManager.graphManagerButton) {
+            console.error('❌ Graph Manager button not found in DOM');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка инициализации GraphManager:', error);
+        // Не показываем alert, чтобы не мешать
+    }
 });
 
 function renderGraph(elements) {

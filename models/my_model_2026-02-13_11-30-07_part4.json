@@ -1,0 +1,261 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "my_model_2026-02-13_11-30-07_part4",
+    "generated_at": "2026-02-13T14:31:00.022037",
+    "source": "api_main.py",
+    "chunks_processed": 1
+  },
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_actor": "администратор",
+      "action_action": "редактирует документ",
+      "action_place": "на главной странице",
+      "action_name": "администратор редактирует документ (на главной странице)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00001",
+        "label": "администратор редактирует документ (на главной странице)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "редактирует документ",
+        "place": "на главной странице"
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_actor": "администратор",
+      "action_action": "редактирует правила",
+      "action_place": "на главной странице",
+      "action_name": "администратор редактирует правила (на главной странице)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00002",
+        "label": "администратор редактирует правила (на главной странице)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "редактирует правила",
+        "place": "на главной странице"
+      }
+    },
+    {
+      "action_id": "a00003",
+      "action_actor": "администратор",
+      "action_action": "отправляет уведомление",
+      "action_place": "на главной странице",
+      "action_name": "администратор отправляет уведомление (на главной странице)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00003",
+        "label": "администратор отправляет уведомление (на главной странице)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "отправляет уведомление",
+        "place": "на главной странице"
+      }
+    },
+    {
+      "action_id": "a00004",
+      "action_actor": "администратор",
+      "action_action": "редактирует роль",
+      "action_place": "на главной странице",
+      "action_name": "администратор редактирует роль (на главной странице)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00004",
+        "label": "администратор редактирует роль (на главной странице)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "редактирует роль",
+        "place": "на главной странице"
+      }
+    },
+    {
+      "action_id": "a00005",
+      "action_actor": "администратор",
+      "action_action": "редактирует пользователь",
+      "action_place": "на главной странице",
+      "action_name": "администратор редактирует пользователь (на главной странице)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00005",
+        "label": "администратор редактирует пользователь (на главной странице)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "редактирует пользователь",
+        "place": "на главной странице"
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00001",
+      "object_name": "документ",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не существует"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "создан"
+        }
+      ]
+    },
+    {
+      "object_id": "o00002",
+      "object_name": "правило",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не существует"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "создан"
+        }
+      ]
+    },
+    {
+      "object_id": "o00003",
+      "object_name": "уведомление",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не существует"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "отправлено"
+        }
+      ]
+    },
+    {
+      "object_id": "o00004",
+      "object_name": "роль",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не существует"
+        }
+      ]
+    },
+    {
+      "object_id": "o00005",
+      "object_name": "ROLь",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "создан"
+        }
+      ]
+    },
+    {
+      "object_id": "o00006",
+      "object_name": "пользователь",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не существует"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "создан"
+        }
+      ]
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_id": "c00001",
+      "connection_out": "o00001s00001",
+      "connection_in": "a00001",
+      "description": "документ не существует → администратор редактирует документ",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00002",
+      "connection_out": "a00001",
+      "connection_in": "o00001s00002",
+      "description": "администратор редактирует документ → документ создан",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00003",
+      "connection_out": "o00002s00001",
+      "connection_in": "a00002",
+      "description": "правило не существует → администратор редактирует правила",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00004",
+      "connection_out": "a00002",
+      "connection_in": "o00002s00002",
+      "description": "администратор редактирует правила → правило создан",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00005",
+      "connection_out": "o00003s00001",
+      "connection_in": "a00003",
+      "description": "уведомление не существует → администратор отправляет уведомление",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00006",
+      "connection_out": "a00003",
+      "connection_in": "o00003s00002",
+      "description": "администратор отправляет уведомление → уведомление отправлено",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00007",
+      "connection_out": "o00004s00001",
+      "connection_in": "a00004",
+      "description": "роль не существует → администратор редактирует роль",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00008",
+      "connection_out": "a00004",
+      "connection_in": "o00005s00001",
+      "description": "администратор редактирует роль → ROLь создан",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00009",
+      "connection_out": "o00006s00001",
+      "connection_in": "a00005",
+      "description": "пользователь не существует → администратор редактирует пользователь",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00010",
+      "connection_out": "a00005",
+      "connection_in": "o00006s00002",
+      "description": "администратор редактирует пользователь → пользователь создан",
+      "type": "results_in"
+    }
+  ]
+}

@@ -1,0 +1,211 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "my_model_2026-02-13_09-42-26_part2",
+    "generated_at": "2026-02-13T12:42:52.376194",
+    "source": "api_main.py",
+    "chunks_processed": 1
+  },
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_actor": "администратор",
+      "action_action": "назначить ответственным",
+      "action_place": "на главной странице",
+      "action_name": "администратор назначить ответственным (на главной странице)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00001",
+        "label": "администратор назначить ответственным (на главной странице)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "назначить ответственным",
+        "place": "на главной странице"
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_actor": "администратор",
+      "action_action": "регистрировать документы",
+      "action_place": "на форме редактирования",
+      "action_name": "администратор регистрировать документы (на форме редактирования)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00002",
+        "label": "администратор регистрировать документы (на форме редактирования)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "регистрировать документы",
+        "place": "на форме редактирования"
+      }
+    },
+    {
+      "action_id": "a00003",
+      "action_actor": "администратор",
+      "action_action": "согласовать документы",
+      "action_place": "на главной странице",
+      "action_name": "администратор согласовать документы (на главной странице)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00003",
+        "label": "администратор согласовать документы (на главной странице)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "согласовать документы",
+        "place": "на главной странице"
+      }
+    },
+    {
+      "action_id": "a00004",
+      "action_actor": "администратор",
+      "action_action": "исполнить документы",
+      "action_place": "на форме редактирования",
+      "action_name": "администратор исполнить документы (на форме редактирования)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00004",
+        "label": "администратор исполнить документы (на форме редактирования)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "исполнить документы",
+        "place": "на форме редактирования"
+      }
+    },
+    {
+      "action_id": "a00005",
+      "action_actor": "администратор",
+      "action_action": "поиск документов",
+      "action_place": "на главной странице",
+      "action_name": "администратор поиск документов (на главной странице)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00005",
+        "label": "администратор поиск документов (на главной странице)",
+        "type": "action",
+        "actor": "администратор",
+        "action": "поиск документов",
+        "place": "на главной странице"
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00001",
+      "object_name": "документ",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не создан"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "создан"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "согласован"
+        },
+        {
+          "state_id": "s00004",
+          "state_name": "исполнен"
+        },
+        {
+          "state_id": "s00005",
+          "state_name": "известен"
+        }
+      ]
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_id": "c00001",
+      "connection_out": "o00001s00001",
+      "connection_in": "a00001",
+      "description": "документ не создан → администратор назначить ответственным",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00002",
+      "connection_out": "a00001",
+      "connection_in": "o00001s00002",
+      "description": "администратор назначить ответственным → документ создан",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00003",
+      "connection_out": "o00001s00001",
+      "connection_in": "a00002",
+      "description": "документ не создан → администратор регистрировать документы",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00004",
+      "connection_out": "a00002",
+      "connection_in": "o00001s00002",
+      "description": "администратор регистрировать документы → документ создан",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00005",
+      "connection_out": "o00001s00002",
+      "connection_in": "a00003",
+      "description": "документ создан → администратор согласовать документы",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00006",
+      "connection_out": "a00003",
+      "connection_in": "o00001s00003",
+      "description": "администратор согласовать документы → документ согласован",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00007",
+      "connection_out": "o00001s00003",
+      "connection_in": "a00004",
+      "description": "документ согласован → администратор исполнить документы",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00008",
+      "connection_out": "a00004",
+      "connection_in": "o00001s00004",
+      "description": "администратор исполнить документы → документ исполнен",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00009",
+      "connection_out": "o00001s00004",
+      "connection_in": "a00005",
+      "description": "документ исполнен → администратор поиск документов",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00010",
+      "connection_out": "a00005",
+      "connection_in": "o00001s00005",
+      "description": "администратор поиск документов → документ известен",
+      "type": "results_in"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "8787",
+    "generated_at": "2026-02-12T15:41:02.265027",
+    "source": "api_main.py",
+    "chunks_processed": 1
+  },
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_actor": "пользователь",
+      "action_action": {
+        "object_name": "контакт",
+        "state_name": "создать"
+      },
+      "action_place": "система",
+      "action_name": "пользователь {'object_name': 'контакт', 'state_name': 'создать'} (система)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00001",
+        "label": "пользователь {'object_name': 'контакт', 'state_name': 'создать'} (система)",
+        "type": "action",
+        "actor": "пользователь",
+        "action": {
+          "object_name": "контакт",
+          "state_name": "создать"
+        },
+        "place": "система"
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_actor": "пользователь с ролью администратор",
+      "action_action": {
+        "object_name": "контакт",
+        "state_name": "редактировать"
+      },
+      "action_place": "система",
+      "action_name": "пользователь с ролью администратор {'object_name': 'контакт', 'state_name': 'редактировать'} (система)",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00002",
+        "label": "пользователь с ролью администратор {'object_name': 'контакт', 'state_name': 'редактировать'} (система)",
+        "type": "action",
+        "actor": "пользователь с ролью администратор",
+        "action": {
+          "object_name": "контакт",
+          "state_name": "редактировать"
+        },
+        "place": "система"
+      }
+    }
+  ],
+  "model_objects": [],
+  "model_connections": []
+}

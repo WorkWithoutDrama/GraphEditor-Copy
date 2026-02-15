@@ -1,0 +1,327 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "0909",
+    "generated_at": "2026-02-12T12:58:51.625573",
+    "source": "api_main.py",
+    "chunks_processed": 1
+  },
+  "model_actions": [
+    {
+      "action_id": "a00001",
+      "action_actor": "пользователь",
+      "action_action": "создает документ",
+      "action_place": "",
+      "action_name": "пользователь создает документ",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00001",
+        "label": "пользователь создает документ",
+        "type": "action",
+        "actor": "пользователь",
+        "action": "создает документ",
+        "place": ""
+      }
+    },
+    {
+      "action_id": "a00002",
+      "action_actor": "пользователь",
+      "action_action": "изменяет реквизиты документа",
+      "action_place": "",
+      "action_name": "пользователь изменяет реквизиты документа",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00002",
+        "label": "пользователь изменяет реквизиты документа",
+        "type": "action",
+        "actor": "пользователь",
+        "action": "изменяет реквизиты документа",
+        "place": ""
+      }
+    },
+    {
+      "action_id": "a00003",
+      "action_actor": "пользователь",
+      "action_action": "прикрепляет файл к документу",
+      "action_place": "",
+      "action_name": "пользователь прикрепляет файл к документу",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00003",
+        "label": "пользователь прикрепляет файл к документу",
+        "type": "action",
+        "actor": "пользователь",
+        "action": "прикрепляет файл к документу",
+        "place": ""
+      }
+    },
+    {
+      "action_id": "a00004",
+      "action_actor": "пользователь",
+      "action_action": "назначает ответственного за документ",
+      "action_place": "",
+      "action_name": "пользователь назначает ответственного за документ",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00004",
+        "label": "пользователь назначает ответственного за документ",
+        "type": "action",
+        "actor": "пользователь",
+        "action": "назначает ответственного за документ",
+        "place": ""
+      }
+    },
+    {
+      "action_id": "a00005",
+      "action_actor": "система",
+      "action_action": "автоматически регистрирует документ",
+      "action_place": "",
+      "action_name": "система автоматически регистрирует документ",
+      "action_links": {
+        "manual": "Из LLM анализа",
+        "API": "",
+        "UI": ""
+      },
+      "graph_data": {
+        "id": "a00005",
+        "label": "система автоматически регистрирует документ",
+        "type": "action",
+        "actor": "система",
+        "action": "автоматически регистрирует документ",
+        "place": ""
+      }
+    }
+  ],
+  "model_objects": [
+    {
+      "object_id": "o00001",
+      "object_name": "документ",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "без создания"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "создан"
+        },
+        {
+          "state_id": "s00003",
+          "state_name": "изменен"
+        },
+        {
+          "state_id": "s00004",
+          "state_name": "прикреплен к файлу"
+        },
+        {
+          "state_id": "s00005",
+          "state_name": "назначен ответственным"
+        },
+        {
+          "state_id": "s00006",
+          "state_name": "регистрирован"
+        }
+      ]
+    },
+    {
+      "object_id": "o00002",
+      "object_name": "реквизиты",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "неполные"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "полные"
+        }
+      ]
+    },
+    {
+      "object_id": "o00003",
+      "object_name": "файл",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не прикреплен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "прикреплен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00004",
+      "object_name": "ответственный",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не назначен"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "назначен"
+        }
+      ]
+    },
+    {
+      "object_id": "o00005",
+      "object_name": "регистрация",
+      "resource_state": [
+        {
+          "state_id": "s00001",
+          "state_name": "не начата"
+        },
+        {
+          "state_id": "s00002",
+          "state_name": "начата"
+        }
+      ]
+    }
+  ],
+  "model_connections": [
+    {
+      "connection_id": "c00001",
+      "connection_out": "o00001s00001",
+      "connection_in": "a00001",
+      "description": "документ без создания → пользователь создает документ",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00002",
+      "connection_out": "a00001",
+      "connection_in": "o00001s00002",
+      "description": "пользователь создает документ → документ создан",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00003",
+      "connection_out": "o00001s00002",
+      "connection_in": "a00002",
+      "description": "документ создан → пользователь изменяет реквизиты документа",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00004",
+      "connection_out": "o00002s00001",
+      "connection_in": "a00002",
+      "description": "реквизиты неполные → пользователь изменяет реквизиты документа",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00005",
+      "connection_out": "a00002",
+      "connection_in": "o00001s00003",
+      "description": "пользователь изменяет реквизиты документа → документ изменен",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00006",
+      "connection_out": "a00002",
+      "connection_in": "o00002s00002",
+      "description": "пользователь изменяет реквизиты документа → реквизиты полные",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00007",
+      "connection_out": "o00001s00002",
+      "connection_in": "a00003",
+      "description": "документ создан → пользователь прикрепляет файл к документу",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00008",
+      "connection_out": "o00003s00001",
+      "connection_in": "a00003",
+      "description": "файл не прикреплен → пользователь прикрепляет файл к документу",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00009",
+      "connection_out": "a00003",
+      "connection_in": "o00001s00004",
+      "description": "пользователь прикрепляет файл к документу → документ прикреплен к файлу",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00010",
+      "connection_out": "a00003",
+      "connection_in": "o00003s00002",
+      "description": "пользователь прикрепляет файл к документу → файл прикреплен",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00011",
+      "connection_out": "o00001s00002",
+      "connection_in": "a00004",
+      "description": "документ создан → пользователь назначает ответственного за документ",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00012",
+      "connection_out": "o00004s00001",
+      "connection_in": "a00004",
+      "description": "ответственный не назначен → пользователь назначает ответственного за документ",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00013",
+      "connection_out": "a00004",
+      "connection_in": "o00001s00005",
+      "description": "пользователь назначает ответственного за документ → документ назначен ответственным",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00014",
+      "connection_out": "a00004",
+      "connection_in": "o00004s00002",
+      "description": "пользователь назначает ответственного за документ → ответственный назначен",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00015",
+      "connection_out": "o00001s00002",
+      "connection_in": "a00005",
+      "description": "документ создан → система автоматически регистрирует документ",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00016",
+      "connection_out": "o00005s00001",
+      "connection_in": "a00005",
+      "description": "регистрация не начата → система автоматически регистрирует документ",
+      "type": "triggers"
+    },
+    {
+      "connection_id": "c00017",
+      "connection_out": "a00005",
+      "connection_in": "o00001s00006",
+      "description": "система автоматически регистрирует документ → документ регистрирован",
+      "type": "results_in"
+    },
+    {
+      "connection_id": "c00018",
+      "connection_out": "a00005",
+      "connection_in": "o00005s00002",
+      "description": "система автоматически регистрирует документ → регистрация начата",
+      "type": "results_in"
+    }
+  ]
+}
