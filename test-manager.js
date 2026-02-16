@@ -48,13 +48,13 @@ class TestManager {
     }
 
     checkAPIStatus() {
-        fetch(`${this.apiBaseUrl}/health`)
+        fetch(`${this.apiBaseUrl}/api/health`)
             .then(response => {
                 this.apiAvailable = response.ok;
                 if (this.apiAvailable) {
                     console.log('✅ Test Manager API доступен');
                 } else {
-                    console.error('❌ Test Manager API недоступен');
+                    console.error('❌ Test Manager API недоступен (статус: ' + response.status + ')');
                 }
             })
             .catch(error => {
@@ -126,11 +126,23 @@ class TestManager {
         this.addTestMessage('📋 Запрос всех тестов из модели...', 'user');
         this.addTestMessage('⏳ Получаю список всех тестов...', 'bot');
         
-        // Здесь будет вызов API для получения всех тестов
-        // Пока что используем заглушку
-        setTimeout(() => {
-            this.displayAllTests();
-        }, 1000);
+        // Вызов API для получения всех тестов
+        fetch(`${this.apiBaseUrl}/api/test-manager/tests`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                this.displayAllTests(data);
+            })
+            .catch(error => {
+                console.error('❌ Ошибка получения тестов:', error);
+                this.addTestMessage(`❌ Ошибка получения тестов: ${error.message}`, 'bot');
+                // Показываем демо-данные в случае ошибки
+                this.displayDemoTests();
+            });
     }
 
     showActionTests() {
@@ -158,61 +170,160 @@ class TestManager {
         });
     }
 
-    displayAllTests() {
-        // Заглушка для демонстрации
-        this.addTestMessage('✅ Получен список всех тестов:', 'bot');
-        
-        const testExamples = [
-            { id: 'test_001', name: 'Тест проверки соединения', description: 'Проверяет установку соединения с API' },
-            { id: 'test_002', name: 'Тест загрузки графа', description: 'Проверяет корректность загрузки структуры графа' },
-            { id: 'test_003', name: 'Тест валидации действий', description: 'Проверяет валидность действий в графе' },
-            { id: 'test_004', name: 'Тест целостности данных', description: 'Проверяет целостность данных модели' }
-        ];
-        
+    displayAllTests(data) {
+        if (!data || !data.tests || data.tests.length === 0) {
+            this.addTestMessage('⚠️ Не получено данных о тестах', 'bot');
+            this.displayDemoTests();
+            return;
+        }
+
+        this.addTestMessage(`✅ Получено ${data.total} тестов:`, 'bot');
+
         let resultsHTML = '<div class="test-results-list"><h4>Доступные тесты:</h4><ul>';
-        
-        testExamples.forEach(test => {
+
+        data.tests.forEach(test => {
+            const priorityBadge = this.getPriorityBadge(test.priority);
+            const typeBadge = this.getTypeBadge(test.type);
+
             resultsHTML += `
                 <li>
                     <strong>${test.name}</strong> (ID: ${test.id})<br>
+                    ${priorityBadge} ${typeBadge}<br>
                     ${test.description}
                 </li>
             `;
         });
-        
+
         resultsHTML += '</ul></div>';
-        
+
         this.testResults.innerHTML = resultsHTML;
         this.addTestMessage('📊 Результаты отображены ниже', 'bot');
+    }
+
+    displayDemoTests() {
+        const testExamples = [
+            {
+                id: 'test_001',
+                name: 'Тест проверки соединения',
+                description: 'Проверяет установку соединения с API',
+                type: 'integration',
+                priority: 'high'
+            },
+            {
+                id: 'test_002',
+                name: 'Тест загрузки графа',
+                description: 'Проверяет корректность загрузки структуры графа',
+                type: 'functional',
+                priority: 'medium'
+            },
+            {
+                id: 'test_003',
+                name: 'Тест валидации действий',
+                description: 'Проверяет валидность действий в графе',
+                type: 'validation',
+                priority: 'high'
+            }
+        ];
+
+        this.displayAllTests({ tests: testExamples, total: testExamples.length });
+        this.addTestMessage('📊 Используются демо-данные', 'bot');
+    }
+
+    getPriorityBadge(priority) {
+        const badges = {
+            'high': '<span class="priority-badge high">🚨 Высокий</span>',
+            'medium': '<span class="priority-badge medium">⚠️ Средний</span>',
+            'low': '<span class="priority-badge low">ℹ️ Низкий</span>'
+        };
+        return badges[priority] || '<span class="priority-badge">ℹ️ Не указан</span>';
+    }
+
+    getTypeBadge(type) {
+        const badges = {
+            'functional': '<span class="type-badge functional">🛠️ Функциональный</span>',
+            'integration': '<span class="type-badge integration">🔗 Интеграционный</span>',
+            'validation': '<span class="type-badge validation">✅ Валидация</span>',
+            'data': '<span class="type-badge data">📊 Данные</span>'
+        };
+        return badges[type] || '<span class="type-badge">❓ Неизвестно</span>';
     }
 
     getTestsForAction(actionId) {
         this.addTestMessage(`🔍 Поиск тестов для действия "${actionId}"...`, 'bot');
         
-        // Заглушка для демонстрации
-        setTimeout(() => {
-            const actionTests = [
-                { id: 'action_test_001', name: 'Тест выполнения действия', description: `Проверяет выполнение действия ${actionId}` },
-                { id: 'action_test_002', name: 'Тест валидации параметров', description: `Проверяет параметры действия ${actionId}` },
-                { id: 'action_test_003', name: 'Тест результата действия', description: `Проверяет результат выполнения действия ${actionId}` }
-            ];
-            
-            let resultsHTML = `<div class="test-results-list"><h4>Тесты для действия "${actionId}":</h4><ul>`;
-            
-            actionTests.forEach(test => {
-                resultsHTML += `
-                    <li>
-                        <strong>${test.name}</strong> (ID: ${test.id})<br>
-                        ${test.description}
-                    </li>
-                `;
+        // Вызов API для получения тестов для действия
+        fetch(`${this.apiBaseUrl}/api/test-manager/tests/${actionId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                this.displayActionTests(actionId, data);
+            })
+            .catch(error => {
+                console.error(`❌ Ошибка получения тестов для действия ${actionId}:`, error);
+                this.addTestMessage(`❌ Ошибка получения тестов для действия: ${error.message}`, 'bot');
+                // Показываем демо-данные в случае ошибки
+                this.displayDemoActionTests(actionId);
             });
-            
-            resultsHTML += '</ul></div>';
-            
-            this.testResults.innerHTML = resultsHTML;
-            this.addTestMessage(`✅ Найдено ${actionTests.length} тестов для действия "${actionId}"`, 'bot');
-        }, 1500);
+    }
+
+    displayActionTests(actionId, data) {
+        if (!data || !data.tests || data.tests.length === 0) {
+            this.addTestMessage(`⚠️ Не найдено тестов для действия "${actionId}"`, 'bot');
+            this.displayDemoActionTests(actionId);
+            return;
+        }
+
+        this.addTestMessage(`✅ Найдено ${data.total} тестов для действия "${actionId}":`, 'bot');
+
+        let resultsHTML = `<div class="test-results-list"><h4>Тесты для действия "${data.action_name || actionId}":</h4><ul>`;
+
+        data.tests.forEach(test => {
+            const priorityBadge = this.getPriorityBadge(test.priority);
+            const typeBadge = this.getTypeBadge(test.type);
+
+            resultsHTML += `
+                <li>
+                    <strong>${test.name}</strong> (ID: ${test.id})<br>
+                    ${priorityBadge} ${typeBadge}<br>
+                    ${test.description}
+                </li>
+            `;
+        });
+
+        resultsHTML += '</ul></div>';
+
+        this.testResults.innerHTML = resultsHTML;
+    }
+
+    displayDemoActionTests(actionId) {
+        const actionTests = [
+            {
+                id: `action_test_001_${actionId}`,
+                name: 'Тест выполнения действия',
+                description: `Проверяет выполнение действия ${actionId}`,
+                type: 'functional',
+                priority: 'high'
+            },
+            {
+                id: `action_test_002_${actionId}`,
+                name: 'Тест валидации параметров',
+                description: `Проверяет параметры действия ${actionId}`,
+                type: 'validation',
+                priority: 'medium'
+            }
+        ];
+
+        this.displayActionTests(actionId, {
+            tests: actionTests,
+            total: actionTests.length,
+            action_id: actionId,
+            action_name: `Действие ${actionId}`
+        });
+        this.addTestMessage('📊 Используются демо-данные', 'bot');
     }
 }
 

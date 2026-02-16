@@ -295,3 +295,50 @@ button { padding: 10px 15px; border: 1px solid #ccc; border-radius: 5px; cursor:
     border-radius: 4px;
     font-size: 14px;
 }
+
+/* Стили для бейджей тестов */
+.priority-badge,
+.type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 5px;
+    margin-bottom: 3px;
+}
+
+.priority-badge.high {
+    background: #ff6b6b;
+    color: white;
+}
+
+.priority-badge.medium {
+    background: #ffd166;
+    color: #333;
+}
+
+.priority-badge.low {
+    background: #06d6a0;
+    color: white;
+}
+
+.type-badge.functional {
+    background: #118ab2;
+    color: white;
+}
+
+.type-badge.integration {
+    background: #073b4c;
+    color: white;
+}
+
+.type-badge.validation {
+    background: #06d6a0;
+    color: white;
+}
+
+.type-badge.data {
+    background: #ef476f;
+    color: white;
+}

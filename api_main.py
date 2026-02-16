@@ -59,12 +59,105 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 "endpoints": {
                     "health": "/api/health",
                     "generate": "/api/generate (POST)",
-                    "status": "/api/status"
+                    "status": "/api/status",
+                    "test_manager": {
+                        "all_tests": "/api/test-manager/tests",
+                        "action_tests": "/api/test-manager/tests/<action_id>"
+                    }
                 }
             }
             
             self.wfile.write(json.dumps(response, indent=2).encode())
             logger.info(f"✅ Health check - {datetime.datetime.now()}")
+            
+        elif self.path == "/api/test-manager/tests":
+            # Эндпоинт для получения всех тестов
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self._set_cors_headers()
+            self.end_headers()
+            
+            # Заглушка для демонстрации
+            test_data = {
+                "tests": [
+                    {
+                        "id": "test_001",
+                        "name": "Тест проверки соединения",
+                        "description": "Проверяет установку соединения с API",
+                        "type": "integration",
+                        "priority": "high"
+                    },
+                    {
+                        "id": "test_002",
+                        "name": "Тест загрузки графа",
+                        "description": "Проверяет корректность загрузки структуры графа",
+                        "type": "functional",
+                        "priority": "medium"
+                    },
+                    {
+                        "id": "test_003",
+                        "name": "Тест валидации действий",
+                        "description": "Проверяет валидность действий в графе",
+                        "type": "validation",
+                        "priority": "high"
+                    },
+                    {
+                        "id": "test_004",
+                        "name": "Тест целостности данных",
+                        "description": "Проверяет целостность данных модели",
+                        "type": "data",
+                        "priority": "medium"
+                    }
+                ],
+                "total": 4,
+                "timestamp": datetime.datetime.now().isoformat()
+            }
+            
+            self.wfile.write(json.dumps(test_data, indent=2, ensure_ascii=False).encode())
+            logger.info(f"✅ Test Manager: возвращено {len(test_data['tests'])} тестов")
+            
+        elif self.path.startswith("/api/test-manager/tests/"):
+            # Эндпоинт для получения тестов для конкретного действия
+            action_id = self.path.replace("/api/test-manager/tests/", "")
+            
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self._set_cors_headers()
+            self.end_headers()
+            
+            # Заглушка для демонстрации
+            test_data = {
+                "action_id": action_id,
+                "action_name": f"Действие {action_id}",
+                "tests": [
+                    {
+                        "id": f"action_test_001_{action_id}",
+                        "name": "Тест выполнения действия",
+                        "description": f"Проверяет выполнение действия {action_id}",
+                        "type": "functional",
+                        "priority": "high"
+                    },
+                    {
+                        "id": f"action_test_002_{action_id}",
+                        "name": "Тест валидации параметров",
+                        "description": f"Проверяет параметры действия {action_id}",
+                        "type": "validation",
+                        "priority": "medium"
+                    },
+                    {
+                        "id": f"action_test_003_{action_id}",
+                        "name": "Тест результата действия",
+                        "description": f"Проверяет результат выполнения действия {action_id}",
+                        "type": "functional",
+                        "priority": "high"
+                    }
+                ],
+                "total": 3,
+                "timestamp": datetime.datetime.now().isoformat()
+            }
+            
+            self.wfile.write(json.dumps(test_data, indent=2, ensure_ascii=False).encode())
+            logger.info(f"✅ Test Manager: возвращено {len(test_data['tests'])} тестов для действия {action_id}")
             
         else:
             self.send_response(404)
