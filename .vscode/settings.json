@@ -1,0 +1,72 @@
+{
+  // Python interpreter configuration
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  
+  // Language server settings
+  "python.languageServer": "None",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  
+  // Extra paths for import resolution (helps with editable installs)
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/../telegram_agent_database"
+  ],
+  
+  // Basedpyright-specific settings (if using Basedpyright extension)
+  "basedpyright.analysis.extraPaths": [
+    "${workspaceFolder}/../telegram_agent_database"
+  ],
+  "basedpyright.analysis.useLibraryCodeForTypes": true,
+  "basedpyright.analysis.diagnosticMode": "workspace",
+  "basedpyright.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none"
+  },
+  
+  // Linting
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": false,
+  
+  // Formatting
+  "python.formatting.provider": "none",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "never"
+    }
+  },
+  
+  // Test discovery
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "."
+  ],
+  "python.testing.unittestEnabled": false,
+  
+  // Terminal settings
+  "python.terminal.activateEnvironment": true,
+  
+  // File associations
+  "files.associations": {
+    "*.md": "markdown"
+  },
+  
+  // Exclude patterns (don't index these)
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    ".pytest_cache": true,
+    ".coverage": true,
+    "htmlcov": true
+  },
+  
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    ".pytest_cache": true,
+    "htmlcov": true
+  }
+}
+
+
