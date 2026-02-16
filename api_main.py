@@ -11,6 +11,9 @@ import sys
 import logging
 import datetime
 import time
+import zipfile
+import io
+import base64
 from urllib.parse import urlparse, parse_qs
 
 # Настройка логирования
@@ -158,6 +161,42 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
             
             self.wfile.write(json.dumps(test_data, indent=2, ensure_ascii=False).encode())
             logger.info(f"✅ Test Manager: возвращено {len(test_data['tests'])} тестов для действия {action_id}")
+            
+        elif self.path == "/api/latest-model":
+            # Эндпоинт для получения последней сохраненной модели
+            try:
+                # Ищем JSON файлы моделей
+                model_files = []
+                for root, dirs, files in os.walk('.'):
+                    for file in files:
+                        if file.endswith('.json') and ('model' in file.lower() or file.startswith('test_project')):
+                            model_files.append(os.path.join(root, file))
+                
+                if not model_files:
+                    # Используем test_project.json как fallback
+                    with open('test_project.json', 'r', encoding='utf-8') as f:
+                        model_data = json.load(f)
+                else:
+                    # Берем самый новый файл
+                    latest_file = max(model_files, key=os.path.getmtime)
+                    with open(latest_file, 'r', encoding='utf-8') as f:
+                        model_data = json.load(f)
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self._set_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps(model_data, ensure_ascii=False).encode())
+                
+                logger.info(f"✅ Возвращена последняя модель из {latest_file if 'latest_file' in locals() else 'test_project.json'}")
+                
+            except Exception as e:
+                logger.error(f"❌ Ошибка получения модели: {e}")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self._set_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
             
         else:
             self.send_response(404)
@@ -333,6 +372,136 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                 self._set_cors_headers()
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e), "status": "error"}).encode())
+        
+        elif self.path == "/api/generate-tests":
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
+                data = json.loads(post_data.decode('utf-8'))
+                
+                # Получаем параметры
+                model_data = data.get('model', {})
+                action_ids = data.get('action_ids', None)  # None = все действия
+                generate_zip = data.get('generate_zip', True)
+                
+                # Если модель не предоставлена, используем последнюю сохраненную
+                if not model_data:
+                    # Ищем последний файл модели
+                    model_files = [f for f in os.listdir('.') if f.endswith('.json') and 'model' in f.lower()]
+                    if model_files:
+                        latest_model = sorted(model_files)[-1]
+                        with open(latest_model, 'r', encoding='utf-8') as f:
+                            model_data = json.load(f)
+                    else:
+                        # Используем test_project.json как fallback
+                        try:
+                            with open('test_project.json', 'r', encoding='utf-8') as f:
+                                model_data = json.load(f)
+                        except:
+                            # Используем example.json как последний fallback
+                            with open('example.json', 'r', encoding='utf-8') as f:
+                                model_data = json.load(f)
+                
+                # Импортируем генератор тестов
+                try:
+                    sys.path.append('.')
+                    from test_generator import generate_tests_from_model
+                except ImportError as e:
+                    logger.error(f"❌ Не удалось импортировать генератор тестов: {e}")
+                    # Создаем простой генератор inline
+                    import io
+                    import zipfile
+                    from datetime import datetime
+                    
+                    def simple_test_generator(model, selected_actions=None):
+                        # Простая заглушка
+                        tests = {}
+                        if selected_actions:
+                            for action_id in selected_actions:
+                                tests[f'test_{action_id}.md'] = f"# Test for {action_id}\n\nSimple test stub"
+                        else:
+                            tests['test_all.md'] = "# All tests\n\nSimple test stub"
+                        
+                        # Создаем ZIP
+                        zip_buffer = io.BytesIO()
+                        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                            for filename, content in tests.items():
+                                zipf.writestr(filename, content.encode('utf-8'))
+                        
+                        zip_buffer.seek(0)
+                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                        return tests, zip_buffer, f'tests_{timestamp}.zip', 'Generated test stub'
+                    
+                    generate_tests_from_model = simple_test_generator
+                
+                # Генерируем тесты
+                tests_dict, zip_buffer, archive_name, summary = generate_tests_from_model(model_data, action_ids)
+                
+                if generate_zip and zip_buffer:
+                    # Возвращаем ZIP архив
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/zip")
+                    self.send_header("Content-Disposition", f"attachment; filename=\"{archive_name}\"")
+                    self._set_cors_headers()
+                    self.end_headers()
+                    
+                    self.wfile.write(zip_buffer.getvalue())
+                    
+                    logger.info(f"✅ Сгенерирован ZIP архив тестов: {archive_name} ({len(tests_dict)} файлов)")
+                else:
+                    # Возвращаем JSON с информацией о тестах
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self._set_cors_headers()
+                    self.end_headers()
+                    
+                    response = {
+                        "success": True,
+                        "total_tests": len(tests_dict),
+                        "files": list(tests_dict.keys()),
+                        "summary": summary,
+                        "download_url": f"/api/download-tests/{archive_name}" if zip_buffer else None
+                    }
+                    
+                    self.wfile.write(json.dumps(response, indent=2, ensure_ascii=False).encode())
+                    
+                    logger.info(f"✅ Сгенерировано {len(tests_dict)} тестов")
+                
+            except Exception as e:
+                logger.error(f"❌ Ошибка генерации тестов: {e}")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self._set_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": False,
+                    "error": str(e)
+                }).encode())
+        
+        elif self.path.startswith("/api/download-tests/"):
+            # Эндпоинт для скачивания ранее сгенерированных тестов
+            try:
+                filename = self.path.replace("/api/download-tests/", "")
+                
+                # В реальной реализации здесь можно брать файл из кэша
+                # Сейчас просто возвращаем ошибку
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self._set_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": False,
+                    "error": "Файл не найден. Сгенерируйте тесты заново."
+                }).encode())
+                
+            except Exception as e:
+                logger.error(f"❌ Ошибка скачивания тестов: {e}")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self._set_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+        
         else:
             self.send_response(404)
             self.send_header("Content-Type", "application/json")

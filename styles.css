@@ -296,6 +296,59 @@ button { padding: 10px 15px; border: 1px solid #ccc; border-radius: 5px; cursor:
     font-size: 14px;
 }
 
+.action-selection {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+}
+
+.action-checkboxes {
+    max-height: 200px;
+    overflow-y: auto;
+    margin: 10px 0;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+}
+
+.action-checkbox {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+}
+
+.action-checkbox input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.action-checkbox label {
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.test-summary {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    border-left: 4px solid #007bff;
+}
+
+.test-summary h4 {
+    margin-top: 0;
+    color: #495057;
+}
+
+.test-summary ul {
+    padding-left: 20px;
+}
+
+.test-summary li {
+    margin: 5px 0;
+}
+
 /* Стили для бейджей тестов */
 .priority-badge,
 .type-badge {
