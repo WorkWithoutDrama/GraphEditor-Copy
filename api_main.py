@@ -402,12 +402,19 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                             with open('example.json', 'r', encoding='utf-8') as f:
                                 model_data = json.load(f)
                 
-                # Импортируем генератор тестов
+                # Импортируем адаптированный генератор тестов
                 try:
                     sys.path.append('.')
-                    from test_generator import generate_tests_from_model
+                    from test_generator_adapted import generate_tests as adapted_generate_tests
+                    
+                    # Обертка для совместимости
+                    def generate_tests(model, action_ids=None):
+                        tests_dict, zip_buffer, archive_name = adapted_generate_tests(model, action_ids)
+                        summary = f"Сгенерировано {len(tests_dict)} тестов с использованием адаптированного алгоритма"
+                        return tests_dict, zip_buffer, archive_name, summary
+                        
                 except ImportError as e:
-                    logger.error(f"❌ Не удалось импортировать генератор тестов: {e}")
+                    logger.error(f"❌ Не удалось импортировать адаптированный генератор тестов: {e}")
                     # Создаем простой генератор inline
                     import io
                     import zipfile
@@ -430,12 +437,13 @@ class SimpleAPIHandler(http.server.BaseHTTPRequestHandler):
                         
                         zip_buffer.seek(0)
                         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                        return tests, zip_buffer, f'tests_{timestamp}.zip', 'Generated test stub'
+                        summary = f"Сгенерировано {len(tests)} тестов с использованием простого генератора"
+                        return tests, zip_buffer, f'tests_{timestamp}.zip', summary
                     
-                    generate_tests_from_model = simple_test_generator
+                    generate_tests = simple_test_generator
                 
                 # Генерируем тесты
-                tests_dict, zip_buffer, archive_name, summary = generate_tests_from_model(model_data, action_ids)
+                tests_dict, zip_buffer, archive_name, summary = generate_tests(model_data, action_ids)
                 
                 if generate_zip and zip_buffer:
                     # Возвращаем ZIP архив
