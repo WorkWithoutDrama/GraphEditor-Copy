@@ -239,3 +239,59 @@ button { padding: 10px 15px; border: 1px solid #ccc; border-radius: 5px; cursor:
 .success { background: #28a745; color: white; }
 .danger { background: #dc3545; color: white; }
 .hint { margin-left: auto; font-size: 13px; color: #555; }
+
+/* Test Manager стили */
+.test-manager-actions {
+    padding: 15px;
+    border-top: 1px solid #eee;
+}
+
+.test-buttons-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.test-results {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.test-results-list {
+    font-size: 14px;
+}
+
+.test-results-list h4 {
+    margin-top: 0;
+    color: #495057;
+}
+
+.test-results-list ul {
+    padding-left: 20px;
+}
+
+.test-results-list li {
+    margin-bottom: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.action-input {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.action-input input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
