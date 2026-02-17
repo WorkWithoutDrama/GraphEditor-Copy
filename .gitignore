@@ -60,3 +60,7 @@ out/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Локальные данные и конфиги
+data/
+.env

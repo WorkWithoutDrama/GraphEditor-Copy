@@ -1,5 +1,27 @@
 flask
 flask-cors
 requests
-pydantic
+pydantic>=2.0.0
 graphviz
+# LLM module dependencies
+litellm>=1.0.0
+httpx>=0.24.0
+# Optional dependencies for better configuration management
+pydantic-settings>=2.0.0
+pyyaml>=6.0
+
+# DB module (Phase A+)
+SQLAlchemy>=2.0,<2.2
+alembic>=1.18
+aiosqlite>=0.19
+pytest>=7.0
+pytest-asyncio>=0.21
+
+# Vector store (Qdrant)
+qdrant-client>=1.12,<2
+
+# Docling (document conversion + chunking)
+docling>=2.73
+# Avoid conflict: docling needs typer<0.22; typer-slim>=0.23 needs typer>=0.23
+typer>=0.12.5,<0.22.0
+typer-slim<0.23
