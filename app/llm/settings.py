@@ -21,7 +21,7 @@ class LLMSettings(BaseSettings):
 
     default_profile: LLMProfile = Field(default=LLMProfile.AUTO, description="Default routing profile")
     concurrency_limit: int = Field(default=8, ge=1, description="Max concurrent LLM calls per process")
-    default_timeout_s: float = Field(default=60.0, gt=0, description="Default request timeout")
+    default_timeout_s: float = Field(default=600.0, gt=0, description="Default request timeout")
     max_retries: int = Field(default=2, ge=0, description="Max retries for retryable errors")
     retry_backoff_base_s: float = Field(default=0.5, gt=0, description="Base delay for exponential backoff")
     retry_backoff_max_s: float = Field(default=8.0, gt=0, description="Max backoff delay")

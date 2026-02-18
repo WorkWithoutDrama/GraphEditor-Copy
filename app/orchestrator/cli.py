@@ -28,9 +28,10 @@ def _print_ingest_summary(run_id: str) -> None:
             )
         ).all()
         by_status = {s: c for s, c in counts}
-        done = by_status.get("DONE", 0)
-        errors = by_status.get("ERROR", 0)
-        total = done + errors + by_status.get("PENDING", 0)
+        # Stage 1: SUCCESS, SUCCESS_WITH_WARNINGS, CACHED = done; FAILED, ERROR = errors
+        done = sum(by_status.get(s, 0) for s in ("DONE", "SUCCESS", "SUCCESS_WITH_WARNINGS", "CACHED"))
+        errors = sum(by_status.get(s, 0) for s in ("ERROR", "FAILED"))
+        total = sum(by_status.values())
         print(f"run_id={run_id}")
         print(f"document_id={run.document_id}")
         print(f"chunks total={total}, done={done}, errors={errors}")
@@ -105,7 +106,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="MVP Orchestrator CLI")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_ingest = sub.add_parser("ingest", help="Ingest a file: parse -> chunk -> LLM extract -> embed")
+    p_ingest = sub.add_parser("ingest", help="Ingest a file: parse -> chunk -> Stage 1 extract (claims)")
     p_ingest.add_argument("--workspace", "-w", default="ws1", help="Workspace ID/name (default: ws1)")
     p_ingest.add_argument("--force", "-f", action="store_true", help="Force reprocess all chunks")
     p_ingest.add_argument("file", help="Path to PDF or other document")

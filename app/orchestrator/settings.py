@@ -14,7 +14,11 @@ class MVPOrchestratorSettings(BaseSettings):
     )
 
     max_concurrency: int = Field(default=4, ge=1, description="Max concurrent chunk processing")
-    prompt_name: str = Field(default="chunk_extract_v1", description="Prompt name for LLM extraction")
+    stage1_model_id: str = Field(
+        default="ollama/llama3.2",
+        description="LLM model for Stage 1 extraction (e.g. ollama/llama3.2)",
+    )
+    prompt_name: str = Field(default="chunk_extract_v1", description="Legacy prompt name (unused with Stage 1)")
     max_chunk_attempts: int = Field(default=2, ge=1, description="Max retries per chunk on error")
     stop_on_first_error: bool = Field(default=False, description="Abort pipeline on first chunk error")
     force_reprocess: bool = Field(default=False, description="Reprocess all chunks even if already done")

@@ -8,6 +8,7 @@ from app.db.models.run import Run, RunItem, Event
 from app.db.models.query import Query, QueryResult
 from app.db.models.extract_run import ExtractRun
 from app.db.models.pipeline_run import ChunkExtraction, ChunkRun, PipelineRun
+from app.db.models.claim import Claim, ClaimEvidence, LlmCall
 from app.llm.persistence.models import LLMRun  # noqa: F401 — register for Alembic
 
 __all__ = [
@@ -27,5 +28,8 @@ __all__ = [
     "PipelineRun",
     "ChunkRun",
     "ChunkExtraction",
+    "Claim",
+    "ClaimEvidence",
+    "LlmCall",
     "LLMRun",
 ]
