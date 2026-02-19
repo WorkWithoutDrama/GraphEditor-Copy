@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 # Bump when schema, normalization, or prompt contract changes.
-STAGE1_EXTRACTOR_VERSION = "2.1.0"
+STAGE1_EXTRACTOR_VERSION = "3.0.0"
 
 # Claim count limits (addressed doc D0.4)
 CLAIMS_SOFT_WARNING = 50
@@ -20,7 +20,7 @@ REPAIR_RAW_TAIL_CHARS = 10_000
 class Stage1Config(BaseModel):
     """Configuration for one Stage 1 run. Stored in run config_json for reproducibility."""
 
-    prompt_version: str = Field(default="chunk_claims_extract_v2_1", description="Semantic prompt version")
+    prompt_version: str = Field(default="chunk_claims_extract_v4_minimal_explicit", description="Semantic prompt version")
     extractor_version: str = Field(default_factory=lambda: STAGE1_EXTRACTOR_VERSION)
     model_id: str = Field(..., description="Provider/model e.g. ollama/llama3.2")
     temperature: float = Field(default=0.1, ge=0.0, le=2.0)

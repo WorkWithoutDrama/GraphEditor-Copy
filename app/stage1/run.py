@@ -31,8 +31,12 @@ from app.stage1.repo import (
     Stage1RunRepo,
 )
 from app.stage1.schema import Stage1ExtractionResult
+from app.stage1.schema_v4 import Stage1ResultV4
 
 logger = logging.getLogger(__name__)
+
+# Union for extract result (v3 or v4)
+Stage1Result = Stage1ExtractionResult | Stage1ResultV4
 
 
 @dataclass
@@ -48,15 +52,17 @@ def _persist_claims_and_evidence(
     run_id: str,
     chunk_id: str,
     chunk_extraction_id: str,
-    result: Stage1ExtractionResult,
+    result: Stage1Result,
     claim_repo: Stage1ClaimRepo,
     claims_hard_limit: int,
+    *,
+    has_warnings: bool = False,
 ) -> tuple[int, bool]:
     """Persist claims and evidence. Returns (count, success_with_warnings)."""
     claims = result.claims
     if len(claims) > claims_hard_limit:
         return 0, False  # Caller should not persist claims
-    success_with_warnings = len(claims) > CLAIMS_SOFT_WARNING
+    success_with_warnings = len(claims) > CLAIMS_SOFT_WARNING or has_warnings
     for c in claims:
         value_json = c.value.model_dump_json() if hasattr(c.value, "model_dump_json") else json.dumps(c.value)
         claim = claim_repo.create_claim(
@@ -67,8 +73,8 @@ def _persist_claims_and_evidence(
             claim_type=c.type,
             value_json=value_json,
             epistemic_tag=c.epistemic_tag,
-            confidence=c.confidence,
-            rule_id=c.rule_id,
+            confidence=getattr(c, "confidence", None),
+            rule_id=getattr(c, "rule_id", None),
         )
         for ev in c.evidence:
             char_start = ev.chunk_ref.char_start if ev.chunk_ref else None
@@ -152,6 +158,7 @@ def run_stage1_extract(
     chunks_failed = 0
     claims_total = 0
     token_usage: dict[str, int] = {}
+    chunk_warnings: dict[str, list[str]] = {}
 
     for cid, text in to_process:
         content_hash = chunk_content_hash(text)
@@ -185,6 +192,7 @@ def run_stage1_extract(
                 repair_attempts=config.repair_attempts,
                 repair_raw_max_chars=config.repair_raw_max_chars,
                 timeout_s=config.timeout_s,
+                prompt_version=config.prompt_version,
             )
         )
         with session_scope() as session:
@@ -223,56 +231,83 @@ def run_stage1_extract(
                 session.commit()
                 chunks_failed += 1
                 continue
-            llm_call = llm_repo.create(
-                session,
-                run_id=run_id,
-                chunk_id=cid,
-                signature_hash=sig_hash,
-                request_json=json.dumps({"chunk_id": cid}),
-                response_text=raw_text,
-                response_json=result.model_dump_json(),
-                status="SUCCESS",
-                latency_ms=usage.get("latency_ms") if usage else None,
-                prompt_tokens=usage.get("prompt_tokens") if usage else None,
-                completion_tokens=usage.get("completion_tokens") if usage else None,
-            )
-            ext = cache_repo.insert(
-                session,
-                chunk_id=cid,
-                run_id=run_id,
-                signature_hash=sig_hash,
-                chunk_content_hash=content_hash,
-                prompt_version=config.prompt_version,
-                extractor_version=config.extractor_version,
-                model_id=config.model_id,
-                produced_run_id=run_id,
-                llm_call_id=llm_call.id,
-                raw_text=raw_text,
-                parsed_json=result.model_dump_json(),
-                usage_json=json.dumps(usage) if usage else None,
-            )
-            n_claims, success_with_warnings = _persist_claims_and_evidence(
-                session,
-                run_id,
-                cid,
-                ext.id,
-                result,
-                claim_repo,
-                config.claims_hard_limit,
-            )
-            claims_total += n_claims
-            chunk_run_repo.mark_success(
-                session,
-                run_id,
-                cid,
-                ext.id,
-                success_with_warnings=success_with_warnings,
-                latency_ms=llm_call.latency_ms,
-            )
-            if usage and isinstance(usage, dict):
-                token_usage["prompt_tokens"] = token_usage.get("prompt_tokens", 0) + usage.get("prompt_tokens", 0)
-                token_usage["completion_tokens"] = token_usage.get("completion_tokens", 0) + usage.get("completion_tokens", 0)
-            session.commit()
+            try:
+                result_json = result.model_dump_json()
+            except Exception as serr:
+                with session_scope() as session:
+                    chunk_run_repo.mark_failed(session, run_id, cid, error_message=f"Serialization failed: {serr}")
+                    llm_repo.create(
+                        session,
+                        run_id=run_id,
+                        chunk_id=cid,
+                        signature_hash=sig_hash,
+                        request_json=json.dumps({"chunk_id": cid}),
+                        response_text=raw_text,
+                        response_json=None,
+                        status="FAILED",
+                        error_message=str(serr),
+                    )
+                    session.commit()
+                chunks_failed += 1
+                continue
+            with session_scope() as session:
+                llm_call = llm_repo.create(
+                    session,
+                    run_id=run_id,
+                    chunk_id=cid,
+                    signature_hash=sig_hash,
+                    request_json=json.dumps({"chunk_id": cid}),
+                    response_text=raw_text,
+                    response_json=result_json,
+                    status="SUCCESS",
+                    latency_ms=usage.get("latency_ms") if usage else None,
+                    prompt_tokens=usage.get("prompt_tokens") if usage else None,
+                    completion_tokens=usage.get("completion_tokens") if usage else None,
+                )
+                llm_call_id = llm_call.id
+                session.commit()
+            with session_scope() as session:
+                ext = cache_repo.insert(
+                    session,
+                    chunk_id=cid,
+                    run_id=run_id,
+                    signature_hash=sig_hash,
+                    chunk_content_hash=content_hash,
+                    prompt_version=config.prompt_version,
+                    extractor_version=config.extractor_version,
+                    model_id=config.model_id,
+                    produced_run_id=run_id,
+                    llm_call_id=llm_call_id,
+                    raw_text=raw_text,
+                    parsed_json=result_json,
+                    usage_json=json.dumps(usage) if usage else None,
+                )
+                extraction_warnings = getattr(result, "warnings", []) or []
+                if extraction_warnings:
+                    chunk_warnings[cid] = extraction_warnings
+                n_claims, success_with_warnings = _persist_claims_and_evidence(
+                    session,
+                    run_id,
+                    cid,
+                    ext.id,
+                    result,
+                    claim_repo,
+                    config.claims_hard_limit,
+                    has_warnings=bool(extraction_warnings),
+                )
+                claims_total += n_claims
+                chunk_run_repo.mark_success(
+                    session,
+                    run_id,
+                    cid,
+                    ext.id,
+                    success_with_warnings=success_with_warnings,
+                    latency_ms=usage.get("latency_ms") if usage else None,
+                )
+                if usage and isinstance(usage, dict):
+                    token_usage["prompt_tokens"] = token_usage.get("prompt_tokens", 0) + usage.get("prompt_tokens", 0)
+                    token_usage["completion_tokens"] = token_usage.get("completion_tokens", 0) + usage.get("completion_tokens", 0)
+                session.commit()
             chunks_success += 1
 
     # Embedding: when config.embed_claims is True, a separate embed_missing_claims job
@@ -290,6 +325,7 @@ def run_stage1_extract(
         "chunks_failed": chunks_failed,
         "claims_total": claims_total,
         "token_usage": token_usage,
+        "chunk_warnings": chunk_warnings,
     }
     with session_scope() as session:
         run_repo.finalize(session, run_id, status, stats)
