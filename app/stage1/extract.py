@@ -1,4 +1,4 @@
-"""Stage 1 LLM extraction: call LLM, parse JSON, repair if needed."""
+"""Stage 1 LLM extraction: call LLM, parse JSON, validate (no repair)."""
 from __future__ import annotations
 
 import logging
@@ -7,7 +7,6 @@ from typing import Any
 
 from app.llm.client_litellm import LiteLLMClient
 from app.llm.types import LLMMessage, LLMRequest, LLMProvider
-from app.stage1.config import REPAIR_RAW_HEAD_CHARS, REPAIR_RAW_TAIL_CHARS
 from app.stage1.parser_registry import parse_with_registry
 from app.stage1.schema import Stage1ExtractionResult
 from app.stage1.schema_v4 import Stage1ResultV4
@@ -16,13 +15,13 @@ PROMPT_VERSION_V4 = "chunk_claims_extract_v4_minimal_explicit"
 logger = logging.getLogger(__name__)
 
 
-def _get_prompt_builders(prompt_version: str):
-    """Return (build_extraction_messages, build_repair_messages) for the given prompt version."""
+def _get_extraction_builder(prompt_version: str):
+    """Return build_extraction_messages for the given prompt version."""
     if prompt_version == PROMPT_VERSION_V4:
         from app.stage1 import prompt_v4
-        return prompt_v4.build_extraction_messages, prompt_v4.build_repair_messages
+        return prompt_v4.build_extraction_messages
     from app.stage1 import prompt
-    return prompt.build_extraction_messages, prompt.build_repair_messages
+    return prompt.build_extraction_messages
 
 # Default model_id format: "provider/modelname" e.g. ollama/llama3.2
 def _provider_from_model_id(model_id: str) -> LLMProvider:
@@ -49,18 +48,16 @@ async def extract_one_chunk(
     temperature: float,
     max_tokens: int,
     client: LiteLLMClient | None = None,
-    repair_attempts: int = 1,
-    repair_raw_max_chars: int = 12_000,
     timeout_s: float = 210.0,
     prompt_version: str = PROMPT_VERSION_V4,
 ) -> tuple[Stage1ExtractionResult | Stage1ResultV4 | None, str | None, str | None, dict[str, Any] | None]:
     """
     Call LLM to extract claims from one chunk. Returns (result, raw_text, error_message, usage_dict).
-    On validation failure (including v4 evidence substring), tries repair once; then fails if still invalid.
+    On parse/validation failure, returns None with error message (no repair).
     """
     client = client or LiteLLMClient(concurrency_limit=8, max_retries=2)
     provider = _provider_from_model_id(model_id)
-    build_extraction_messages, build_repair_messages = _get_prompt_builders(prompt_version)
+    build_extraction_messages = _get_extraction_builder(prompt_version)
     messages = build_extraction_messages(chunk_id, chunk_text or "")
     req = LLMRequest(
         messages=[LLMMessage(role=m["role"], content=m["content"]) for m in messages],
@@ -93,33 +90,5 @@ async def extract_one_chunk(
         result.warnings = list(getattr(result, "warnings", [])) + extra_warnings
         return result, raw_text, None, usage_dict
     except Exception as e:
-        validation_error = str(e)
-        logger.warning("Validation failed for chunk %s: %s", chunk_id, validation_error)
-    # Repair
-    for attempt in range(repair_attempts):
-        try:
-            repair_kw: dict = {
-                "head_chars": REPAIR_RAW_HEAD_CHARS,
-                "tail_chars": min(repair_raw_max_chars - REPAIR_RAW_HEAD_CHARS, 10_000),
-            }
-            if prompt_version == PROMPT_VERSION_V4:
-                repair_kw["chunk_text"] = chunk_text_norm
-            repair_messages = build_repair_messages(raw_text or "", **repair_kw)
-            repair_req = LLMRequest(
-                messages=[LLMMessage(role=m["role"], content=m["content"]) for m in repair_messages],
-                temperature=0.0,
-                max_output_tokens=max_tokens,
-                response_format={"type": "json_object"},
-            )
-            repair_resp = await client.acompletion(provider, model_id, repair_req, timeout_s=timeout_s)
-            repair_raw = repair_resp.text
-            cleaned = _strip_json_block(repair_raw)
-            result, extra_warnings = parse_with_registry(
-                cleaned, chunk_id, chunk_text_norm, prompt_version=prompt_version
-            )
-            result.warnings = list(getattr(result, "warnings", [])) + extra_warnings
-            return result, raw_text, None, usage_dict
-        except Exception as repair_e:
-            logger.warning("Repair attempt %s failed for chunk %s: %s", attempt + 1, chunk_id, repair_e)
-            validation_error = str(repair_e)
-    return None, raw_text, validation_error, usage_dict
+        logger.warning("Parse/validation failed for chunk %s: %s", chunk_id, e)
+        return None, raw_text, str(e), usage_dict

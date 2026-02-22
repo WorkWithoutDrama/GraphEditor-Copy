@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 from app.stage1.schema import parse_and_validate_extraction
 from app.stage1.schema_v4 import parse_stage1_v4, PROMPT_VERSION_V4
-from app.stage1.validators import validate_bullet_coverage, validate_evidence_substrings
+from app.stage1.validators import validate_evidence_substrings
 
 PROMPT_VERSION_V3 = "chunk_claims_extract_v3_explicit_only"
 
@@ -17,14 +17,8 @@ _REGISTRY: dict[str, tuple[Callable[[str | dict, str], Any], list[PostValidator]
 
 
 def _v4_substring_validator(result: Any, chunk_text: str) -> list[str]:
-    """Run substring validation; raises ValueError if any snippet not in chunk."""
-    validate_evidence_substrings(result, chunk_text)
-    return []
-
-
-def _v4_bullet_validator(result: Any, chunk_text: str) -> list[str]:
-    """Return list of uncovered bullet warnings."""
-    return validate_bullet_coverage(result, chunk_text)
+    """Drop claims with invalid evidence (no evidence or snippet not in chunk); return warnings."""
+    return validate_evidence_substrings(result, chunk_text)
 
 
 def _parse_v3(raw: str | dict[str, Any], chunk_id: str):
@@ -60,7 +54,7 @@ def parse_with_registry(
 ) -> tuple[Any, list[str]]:
     """
     Parse raw output using the registry for the given (or detected) prompt_version.
-    Runs post_validators (v4: substring then bullet coverage).
+    Runs post_validators (v4: substring validation).
     Returns (result, list of extra warnings). Substring validator may raise ValueError.
     """
     if prompt_version is None and isinstance(raw, dict):
@@ -84,9 +78,9 @@ def parse_with_registry(
 # Register v3 (existing schema, no post validators)
 register(PROMPT_VERSION_V3, _parse_v3, [])
 
-# Register v4 (v4 schema + substring + bullet coverage validators)
+# Register v4 (v4 schema + substring validator)
 register(
     PROMPT_VERSION_V4,
     parse_stage1_v4,
-    [_v4_substring_validator, _v4_bullet_validator],
+    [_v4_substring_validator],
 )

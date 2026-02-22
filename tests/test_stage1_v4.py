@@ -9,25 +9,19 @@ from app.stage1.schema_v4 import (
     Stage1ResultV4,
     parse_stage1_v4,
     PROMPT_VERSION_V4,
-    ActionClaimV4,
     ActorClaimV4,
-    ObjectClaimV4,
     EvidenceV4,
     ChunkRefV4,
 )
-from app.stage1.validators import (
-    validate_evidence_substrings,
-    validate_bullet_coverage,
-)
+from app.stage1.validators import validate_evidence_substrings
 from app.stage1.cards import claim_to_embedding_text_v4
 
 
 # ---- Evidence substring ----
 def test_validate_evidence_substrings_pass():
-    """When all snippets are in chunk, no raise."""
+    """When all snippets are in chunk, no claims dropped, returns no warnings."""
     result = Stage1ResultV4(
         chunk_id="c1",
-        summary="x",
         claims=[
             ActorClaimV4(
                 type="ACTOR",
@@ -39,14 +33,15 @@ def test_validate_evidence_substrings_pass():
         ],
     )
     chunk = "Пользователь удаляет завершенный проект"
-    validate_evidence_substrings(result, chunk)
+    warnings = validate_evidence_substrings(result, chunk)
+    assert len(result.claims) == 1
+    assert warnings == []
 
 
-def test_validate_evidence_substrings_fail():
-    """When a snippet is not in chunk, raises ValueError."""
+def test_validate_evidence_substrings_drops_only_bad_claim():
+    """When a snippet is not in chunk, drop only that claim and return warning (no raise)."""
     result = Stage1ResultV4(
         chunk_id="c1",
-        summary="x",
         claims=[
             ActorClaimV4(
                 type="ACTOR",
@@ -58,15 +53,41 @@ def test_validate_evidence_substrings_fail():
         ],
     )
     chunk = "Пользователь удаляет проект"
-    with pytest.raises(ValueError, match="not a substring"):
-        validate_evidence_substrings(result, chunk)
+    warnings = validate_evidence_substrings(result, chunk)
+    assert len(result.claims) == 0
+    assert any("not a substring" in w for w in warnings)
+
+
+def test_validate_evidence_substrings_drops_only_invalid_keeps_valid():
+    """When one claim has bad evidence and another is valid, only the bad claim is dropped."""
+    result = Stage1ResultV4(
+        chunk_id="c1",
+        claims=[
+            ActorClaimV4(
+                type="ACTOR",
+                value={"name": "Bad"},
+                evidence=[EvidenceV4(snippet="not in chunk", chunk_ref=ChunkRefV4(chunk_id="c1"))],
+            ),
+            ActorClaimV4(
+                type="ACTOR",
+                value={"name": "Пользователь"},
+                evidence=[
+                    EvidenceV4(snippet="Пользователь удаляет", chunk_ref=ChunkRefV4(chunk_id="c1"))
+                ],
+            ),
+        ],
+    )
+    chunk = "Пользователь удаляет проект"
+    warnings = validate_evidence_substrings(result, chunk)
+    assert len(result.claims) == 1
+    assert result.claims[0].value.name == "Пользователь"
+    assert any("not a substring" in w for w in warnings)
 
 
 def test_validate_evidence_substrings_normalizes_newlines():
     """CRLF in chunk and snippet still matches after normalize."""
     result = Stage1ResultV4(
         chunk_id="c1",
-        summary="x",
         claims=[
             ActorClaimV4(
                 type="ACTOR",
@@ -76,82 +97,21 @@ def test_validate_evidence_substrings_normalizes_newlines():
         ],
     )
     chunk = "line one\r\nline two"
-    validate_evidence_substrings(result, chunk)
+    warnings = validate_evidence_substrings(result, chunk)
+    assert len(result.claims) == 1
+    assert warnings == []
 
 
-# ---- Bullet coverage ----
-def test_validate_bullet_coverage_all_covered():
-    """Three bullets, three ACTION claims with matching evidence -> no warnings."""
-    chunk = """3.1.3 Удаление проекта
-- Пользователь удаляет завершенный проект
-- Пользователь архивирует проект
-- Система сохраняет историю проекта
-"""
-    result = Stage1ResultV4(
-        chunk_id="c1",
-        summary="x",
-        claims=[
-            ActionClaimV4(
-                type="ACTION",
-                value={"actor": "Пользователь", "verb": "удаляет", "object": "Проект", "qualifiers": ["завершенный"]},
-                evidence=[EvidenceV4(snippet="Пользователь удаляет завершенный проект", chunk_ref=ChunkRefV4(chunk_id="c1"))],
-            ),
-            ActionClaimV4(
-                type="ACTION",
-                value={"actor": "Пользователь", "verb": "архивирует", "object": "Проект", "qualifiers": []},
-                evidence=[EvidenceV4(snippet="Пользователь архивирует проект", chunk_ref=ChunkRefV4(chunk_id="c1"))],
-            ),
-            ActionClaimV4(
-                type="ACTION",
-                value={"actor": "Система", "verb": "сохраняет", "object": "историю проекта", "qualifiers": []},
-                evidence=[EvidenceV4(snippet="Система сохраняет историю проекта", chunk_ref=ChunkRefV4(chunk_id="c1"))],
-            ),
-        ],
-    )
-    uncovered = validate_bullet_coverage(result, chunk)
-    assert uncovered == []
-
-
-def test_validate_bullet_coverage_missing_bullet():
-    """Two bullets, one ACTION -> one uncovered warning."""
-    chunk = """- First bullet
-- Second bullet
-"""
-    result = Stage1ResultV4(
-        chunk_id="c1",
-        summary="x",
-        claims=[
-            ActionClaimV4(
-                type="ACTION",
-                value={"actor": "A", "verb": "v", "object": "O", "qualifiers": []},
-                evidence=[EvidenceV4(snippet="First bullet", chunk_ref=ChunkRefV4(chunk_id="c1"))],
-            ),
-        ],
-    )
-    uncovered = validate_bullet_coverage(result, chunk)
-    assert len(uncovered) == 1
-    assert "Second bullet" in uncovered[0]
-
-
-def test_validate_bullet_coverage_no_bullets():
-    """Chunk with no bullet lines -> empty warnings."""
-    result = Stage1ResultV4(chunk_id="c1", summary="x", claims=[])
-    uncovered = validate_bullet_coverage(result, "Plain paragraph text.")
-    assert uncovered == []
-
-
-# ---- Empty evidence (post-parse validator) ----
-def test_empty_evidence_substring_validator_raises():
-    """Claim with empty evidence passes Pydantic; validate_evidence_substrings raises with 'at least one evidence'."""
+# ---- Empty evidence (dropped on parse) ----
+def test_empty_evidence_claim_dropped_on_parse():
+    """Claim with empty evidence is dropped during parse; result has 0 claims, validator does not raise."""
     raw = {
         "prompt_version": PROMPT_VERSION_V4,
         "chunk_id": "c1",
-        "summary": "s",
         "claims": [
             {
                 "type": "ACTOR",
                 "epistemic_tag": "EXPLICIT",
-                "confidence": None,
                 "value": {"name": "A"},
                 "evidence": [],
             }
@@ -159,9 +119,10 @@ def test_empty_evidence_substring_validator_raises():
         "warnings": [],
     }
     result = parse_stage1_v4(raw, "c1")
+    assert len(result.claims) == 0
     chunk = "A does something"
-    with pytest.raises(ValueError, match="at least one evidence"):
-        validate_evidence_substrings(result, chunk)
+    warnings = validate_evidence_substrings(result, chunk)
+    assert warnings == []
 
 
 # ---- Snippet length > 300 (normalizer truncates) ----
@@ -171,12 +132,10 @@ def test_snippet_over_300_truncated_with_warning():
     raw = {
         "prompt_version": PROMPT_VERSION_V4,
         "chunk_id": "c1",
-        "summary": "s",
         "claims": [
             {
                 "type": "OBJECT",
                 "epistemic_tag": "EXPLICIT",
-                "confidence": None,
                 "value": {"name": "O"},
                 "evidence": [{"snippet": long_snippet, "chunk_ref": {"chunk_id": "c1"}}],
             }
@@ -190,18 +149,72 @@ def test_snippet_over_300_truncated_with_warning():
     assert any("Truncated evidence" in w for w in result.warnings)
 
 
-# ---- chunk_ref normalization ----
+# ---- Evidence as string array (canonical format) ----
+def test_evidence_as_string_array_parsed_and_normalized():
+    """Evidence as array of strings is normalized to EvidenceV4 with snippet and chunk_ref."""
+    raw = [
+        {
+            "type": "ACTOR",
+            "value": {"name": "Пользователь"},
+            "evidence": ["пользователь создает документ", "пользователь удаляет документ"],
+        },
+        {
+            "type": "ACTION",
+            "value": {"actor": "Пользователь", "verb": "Удаляет", "object": "Документ"},
+            "evidence": ["пользователь удаляет документ"],
+        },
+    ]
+    result = parse_stage1_v4(raw, "chunk-1")
+    assert len(result.claims) == 2
+    # ACTOR: two evidence items
+    assert result.claims[0].type == "ACTOR"
+    assert len(result.claims[0].evidence) == 2
+    assert result.claims[0].evidence[0].snippet == "пользователь создает документ"
+    assert result.claims[0].evidence[1].snippet == "пользователь удаляет документ"
+    for ev in result.claims[0].evidence:
+        assert ev.chunk_ref is not None
+        assert ev.chunk_ref.chunk_id == "chunk-1"
+    # ACTION: one evidence item
+    assert result.claims[1].type == "ACTION"
+    assert len(result.claims[1].evidence) == 1
+    assert result.claims[1].evidence[0].snippet == "пользователь удаляет документ"
+    assert result.claims[1].evidence[0].chunk_ref.chunk_id == "chunk-1"
+
+
+def test_evidence_as_object_array_still_parsed():
+    """Backward compatibility: evidence as [ { \"snippet\": \"...\" } ] still parses and normalizes."""
+    raw = {
+        "prompt_version": PROMPT_VERSION_V4,
+        "chunk_id": "c1",
+        "claims": [
+            {
+                "type": "ACTOR",
+                "epistemic_tag": "EXPLICIT",
+                "value": {"name": "A"},
+                "evidence": [{"snippet": "Actor A"}, {"snippet": "A does something"}],
+            }
+        ],
+        "warnings": [],
+    }
+    result = parse_stage1_v4(raw, "c1")
+    assert len(result.claims) == 1
+    assert len(result.claims[0].evidence) == 2
+    assert result.claims[0].evidence[0].snippet == "Actor A"
+    assert result.claims[0].evidence[1].snippet == "A does something"
+    for ev in result.claims[0].evidence:
+        assert ev.chunk_ref is not None and ev.chunk_ref.chunk_id == "c1"
+
+
+# ---- chunk_ref normalization (backward compat: object form) ----
 def test_chunk_ref_missing_or_invalid_normalized():
     """Evidence with missing or invalid chunk_ref gets chunk_id from normalizer; parse succeeds."""
     raw = {
         "prompt_version": PROMPT_VERSION_V4,
         "chunk_id": "chunk-42",
-        "summary": "s",
         "claims": [
             {
                 "type": "ACTOR",
                 "epistemic_tag": "EXPLICIT",
-                "confidence": None,
                 "value": {"name": "A"},
                 "evidence": [
                     {"snippet": "A", "chunk_ref": {}},
@@ -227,12 +240,10 @@ def test_schema_extra_keys_rejected():
             {
                 "prompt_version": PROMPT_VERSION_V4,
                 "chunk_id": "c1",
-                "summary": "s",
                 "claims": [
                     {
                         "type": "STATE",
                         "epistemic_tag": "EXPLICIT",
-                        "confidence": None,
                         "value": {"object_name": "O", "state": "S", "description": "forbidden"},
                         "evidence": [{"snippet": "O S", "chunk_ref": {"chunk_id": "c1"}}],
                     }
@@ -243,6 +254,43 @@ def test_schema_extra_keys_rejected():
         )
 
 
+def test_state_value_missing_state_normalized():
+    """STATE claim with value missing 'state' gets state='(unspecified)' and warning; parse succeeds."""
+    raw = {
+        "type": "STATE",
+        "value": {"object_name": "Система"},
+        "evidence": ["Мониторинг состояния системы 24/7"],
+    }
+    result = parse_stage1_v4(raw, "chunk-1")
+    assert len(result.claims) == 1
+    assert result.claims[0].type == "STATE"
+    assert result.claims[0].value.object_name == "Система"
+    assert result.claims[0].value.state == "(unspecified)"
+    assert any("STATE" in w and "state" in w for w in result.warnings)
+
+
+def test_deny_with_empty_value_fields_dropped_on_parse():
+    """DENY claim with empty actor/verb/object is dropped during parse; warning added."""
+    raw = {
+        "prompt_version": PROMPT_VERSION_V4,
+        "chunk_id": "c1",
+        "claims": [
+            {"type": "ACTOR", "epistemic_tag": "EXPLICIT", "value": {"name": "A"}, "evidence": ["Actor A"]},
+            {
+                "type": "DENY",
+                "epistemic_tag": "EXPLICIT",
+                "value": {"actor": "", "verb": "", "object": "", "reason": ""},
+                "evidence": ["cannot do something"],  # has evidence so dropped by value check, not evidence check
+            },
+        ],
+        "warnings": [],
+    }
+    result = parse_stage1_v4(raw, "c1")
+    assert len(result.claims) == 1
+    assert result.claims[0].type == "ACTOR"
+    assert any("DENY" in w and "empty" in w for w in result.warnings)
+
+
 def test_schema_action_missing_verb_rejected():
     """ACTION value without verb -> ValidationError."""
     with pytest.raises(ValidationError):
@@ -250,12 +298,10 @@ def test_schema_action_missing_verb_rejected():
             {
                 "prompt_version": PROMPT_VERSION_V4,
                 "chunk_id": "c1",
-                "summary": "s",
                 "claims": [
                     {
                         "type": "ACTION",
                         "epistemic_tag": "EXPLICIT",
-                        "confidence": None,
                         "value": {"actor": "A", "object": "O"},
                         "evidence": [{"snippet": "A does O", "chunk_ref": {"chunk_id": "c1"}}],
                     }
@@ -275,19 +321,18 @@ GOLDEN_CHUNK = """3.1.3 Удаление проекта
 
 
 def test_golden_chunk_parse_and_validate():
-    """Parse golden chunk JSON (as if from LLM) and assert shapes + substring."""
-    # Simulate v4 LLM output
+    """Parse golden chunk JSON (as if from LLM) and assert shapes + substring. Uses canonical evidence-as-string-array format."""
+    # Simulate v4 LLM output (evidence as array of verbatim quote strings)
     raw = {
         "prompt_version": PROMPT_VERSION_V4,
         "chunk_id": "golden-1",
-        "summary": "Удаление и архивирование проекта пользователем, сохранение истории системой.",
         "claims": [
-            {"type": "ACTOR", "epistemic_tag": "EXPLICIT", "confidence": None, "value": {"name": "Пользователь"}, "evidence": [{"snippet": "Пользователь удаляет", "chunk_ref": {"chunk_id": "golden-1"}}]},
-            {"type": "ACTOR", "epistemic_tag": "EXPLICIT", "confidence": None, "value": {"name": "Система"}, "evidence": [{"snippet": "Система сохраняет", "chunk_ref": {"chunk_id": "golden-1"}}]},
-            {"type": "OBJECT", "epistemic_tag": "EXPLICIT", "confidence": None, "value": {"name": "Проект"}, "evidence": [{"snippet": "проект", "chunk_ref": {"chunk_id": "golden-1"}}]},
-            {"type": "ACTION", "epistemic_tag": "EXPLICIT", "confidence": None, "value": {"actor": "Пользователь", "verb": "удаляет", "object": "Проект", "qualifiers": ["завершенный"]}, "evidence": [{"snippet": "Пользователь удаляет завершенный проект", "chunk_ref": {"chunk_id": "golden-1"}}]},
-            {"type": "ACTION", "epistemic_tag": "EXPLICIT", "confidence": None, "value": {"actor": "Пользователь", "verb": "архивирует", "object": "Проект", "qualifiers": []}, "evidence": [{"snippet": "Пользователь архивирует проект", "chunk_ref": {"chunk_id": "golden-1"}}]},
-            {"type": "ACTION", "epistemic_tag": "EXPLICIT", "confidence": None, "value": {"actor": "Система", "verb": "сохраняет", "object": "историю проекта", "qualifiers": []}, "evidence": [{"snippet": "Система сохраняет историю проекта", "chunk_ref": {"chunk_id": "golden-1"}}]},
+            {"type": "ACTOR", "epistemic_tag": "EXPLICIT", "value": {"name": "Пользователь"}, "evidence": ["Пользователь удаляет", "Пользователь архивирует"]},
+            {"type": "ACTOR", "epistemic_tag": "EXPLICIT", "value": {"name": "Система"}, "evidence": ["Система сохраняет историю проекта"]},
+            {"type": "OBJECT", "epistemic_tag": "EXPLICIT", "value": {"name": "Проект"}, "evidence": ["проект", "завершенный проект"]},
+            {"type": "ACTION", "epistemic_tag": "EXPLICIT", "value": {"actor": "Пользователь", "verb": "удаляет", "object": "Проект"}, "evidence": ["Пользователь удаляет завершенный проект"]},
+            {"type": "ACTION", "epistemic_tag": "EXPLICIT", "value": {"actor": "Пользователь", "verb": "архивирует", "object": "Проект"}, "evidence": ["Пользователь архивирует проект"]},
+            {"type": "ACTION", "epistemic_tag": "EXPLICIT", "value": {"actor": "Система", "verb": "сохраняет", "object": "историю проекта"}, "evidence": ["Система сохраняет историю проекта"]},
         ],
         "warnings": [],
     }
@@ -306,8 +351,24 @@ def test_golden_chunk_parse_and_validate():
     assert len(deny_claims) == 0
 
     validate_evidence_substrings(result, GOLDEN_CHUNK)
-    uncovered = validate_bullet_coverage(result, GOLDEN_CHUNK)
-    assert uncovered == []
+
+
+def test_parse_array_root_and_output_schema_shape():
+    """Parse root as array of claims (OUTPUT SCHEMA); claims with type, value, evidence (string array or object) validate."""
+    # Root = array of claims (no "claims" wrapper); evidence as string array (canonical)
+    raw_array = [
+        {"type": "ACTOR", "value": {"name": "Система"}, "evidence": ["Система управления"]},
+        {"type": "OBJECT", "value": {"name": "Проект"}, "evidence": ["проект"]},
+    ]
+    result = parse_stage1_v4(raw_array, "chunk-1")
+    assert len(result.claims) == 2
+    assert result.claims[0].type == "ACTOR"
+    assert result.claims[0].value.name == "Система"
+    assert result.claims[1].type == "OBJECT"
+    assert result.claims[1].value.name == "Проект"
+    # evidence gets chunk_ref filled by normalizer
+    assert result.claims[0].evidence[0].chunk_ref is not None
+    assert result.claims[0].evidence[0].chunk_ref.chunk_id == "chunk-1"
 
 
 # ---- Card text ----
@@ -316,7 +377,7 @@ def test_claim_to_embedding_text_v4():
     assert claim_to_embedding_text_v4("OBJECT", {"name": "Проект"}) == "OBJECT | Проект"
     assert claim_to_embedding_text_v4(
         "ACTION",
-        {"actor": "Пользователь", "verb": "удаляет", "object": "Проект", "qualifiers": ["завершенный"]},
-    ) == "ACTION | Пользователь | удаляет | Проект | завершенный"
+        {"actor": "Пользователь", "verb": "удаляет", "object": "Проект"},
+    ) == "ACTION | Пользователь | удаляет | Проект"
     assert claim_to_embedding_text_v4("STATE", {"object_name": "Задача", "state": "Новая"}) == "STATE | Задача | Новая"
     assert claim_to_embedding_text_v4("DENY", {"actor": "A", "verb": "v", "object": "O"}) == "DENY | A | v | O"

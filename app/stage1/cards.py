@@ -5,7 +5,7 @@ from __future__ import annotations
 def claim_to_embedding_text_v4(claim_type: str, value: dict) -> str:
     """
     Build canonical card text for v4 claims for embedding and Qdrant payload.
-    Formats: ACTOR | <name>; OBJECT | <name>; ACTION | <actor> | <verb> | <object> | <qualifiers>;
+    Formats: ACTOR | <name>; OBJECT | <name>; ACTION | <actor> | <verb> | <object>;
     STATE | <object_name> | <state>; DENY | <actor> | <verb> | <object>.
     """
     if not value:
@@ -18,10 +18,6 @@ def claim_to_embedding_text_v4(claim_type: str, value: dict) -> str:
         actor = value.get("actor", "").strip()
         verb = value.get("verb", "").strip()
         obj = value.get("object", "").strip()
-        qualifiers = value.get("qualifiers") or []
-        qual_str = " ".join(str(q).strip() for q in qualifiers if q)
-        if qual_str:
-            return f"ACTION | {actor} | {verb} | {obj} | {qual_str}"
         return f"ACTION | {actor} | {verb} | {obj}"
     if claim_type == "STATE":
         obj_name = value.get("object_name", "").strip()

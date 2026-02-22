@@ -50,7 +50,6 @@ class ActionMentionValueV4(BaseModel):
     actor: str
     verb: str
     object: str
-    qualifiers: list[str] = Field(default_factory=list)
 
     @field_validator("actor", "verb", "object")
     @classmethod
@@ -92,7 +91,6 @@ class DenyValueV4(BaseModel):
 class _ClaimV4Base(BaseModel):
     model_config = ConfigDict(extra="forbid")
     epistemic_tag: Literal["EXPLICIT"] = "EXPLICIT"
-    confidence: None = None
     # Allow empty so parsing succeeds when LLM omits evidence; post-parse validator requires at least one
     evidence: list[EvidenceV4] = Field(default_factory=list)
 
@@ -146,11 +144,19 @@ def _normalize_evidence_list(
     claim_type: str,
     warnings: list[str],
 ) -> list[dict[str, Any]]:
-    """Normalize evidence items: fix chunk_ref, truncate snippet if > 300 chars. Mutates warnings."""
+    """Normalize evidence items: accept string or {snippet}; fix chunk_ref, truncate snippet if > 300 chars. Mutates warnings."""
     if not isinstance(evidence_list, list):
         return []
     result: list[dict[str, Any]] = []
     for i, ev in enumerate(evidence_list):
+        if isinstance(ev, str):
+            snippet = ev
+            if len(snippet) > SNIPPET_MAX_LENGTH:
+                snippet = snippet[:SNIPPET_MAX_LENGTH]
+                warnings.append(f"Truncated evidence to {SNIPPET_MAX_LENGTH} chars for claim type {claim_type}")
+            ev = {"snippet": snippet, "chunk_ref": {"chunk_id": chunk_id}}
+            result.append(ev)
+            continue
         if not isinstance(ev, dict):
             continue
         snippet = ev.get("snippet")
@@ -189,12 +195,40 @@ def _normalize_claims_for_parsing(data: dict[str, Any], chunk_id: str) -> None:
             continue
         t = item.get("type")
         if t not in allowed_types:
+            # Type "CLAIM" or unknown with "state"/"action" -> expand into STATE and/or ACTION claims
+            state_val = item.get("state") if isinstance(item.get("state"), dict) else None
+            action_val = item.get("action") if isinstance(item.get("action"), dict) else None
+            base_evidence: list[Any] = item.get("evidence") if isinstance(item.get("evidence"), list) else []
+            expanded: list[dict[str, Any]] = []
+            if state_val and isinstance(state_val.get("object_name"), str) and isinstance(state_val.get("state"), str):
+                expanded.append({
+                    "type": "STATE",
+                    "epistemic_tag": "EXPLICIT",
+                    "value": {"object_name": str(state_val["object_name"]).strip(), "state": str(state_val["state"]).strip()},
+                    "evidence": base_evidence.copy(),
+                })
+            if action_val and isinstance(action_val.get("actor"), str) and isinstance(action_val.get("verb"), str) and isinstance(action_val.get("object"), str):
+                expanded.append({
+                    "type": "ACTION",
+                    "epistemic_tag": "EXPLICIT",
+                    "value": {
+                        "actor": str(action_val["actor"]).strip(),
+                        "verb": str(action_val["verb"]).strip(),
+                        "object": str(action_val["object"]).strip(),
+                    },
+                    "evidence": base_evidence.copy(),
+                })
+            if expanded:
+                for sub in expanded:
+                    sub["evidence"] = _normalize_evidence_list(sub["evidence"], chunk_id, str(sub["type"]), warnings)
+                    normalized.append(sub)
+                continue
             # Bare value object? Try to infer type and wrap
             if "name" in item and "actor" not in item and "object_name" not in item:
                 if "verb" in item or "object" in item:
                     dropped += 1
                     continue
-                item = {"type": "OBJECT", "epistemic_tag": "EXPLICIT", "confidence": None, "value": {"name": item["name"]}, "evidence": item.get("evidence", [])}
+                item = {"type": "OBJECT", "epistemic_tag": "EXPLICIT", "value": {"name": item["name"]}, "evidence": item.get("evidence", [])}
             else:
                 dropped += 1
                 continue
@@ -207,10 +241,30 @@ def _normalize_claims_for_parsing(data: dict[str, Any], chunk_id: str) -> None:
             str(t),
             warnings,
         )
+        # Drop claims with no evidence (prompt says omit such types entirely)
+        if not item["evidence"]:
+            dropped += 1
+            continue
         if "epistemic_tag" not in item:
             item = {**item, "epistemic_tag": "EXPLICIT"}
-        if "confidence" not in item:
-            item = {**item, "confidence": None}
+        if "confidence" in item:
+            item = {k: v for k, v in item.items() if k != "confidence"}
+        # Drop DENY with empty required value fields (prompt says do not include if cannot extract)
+        if t == "DENY" and isinstance(item.get("value"), dict):
+            val = item["value"]
+            if not (str(val.get("actor") or "").strip()) or not (str(val.get("verb") or "").strip()) or not (str(val.get("object") or "").strip()):
+                dropped += 1
+                warnings.append("Skipped DENY claim with empty actor/verb/object")
+                continue
+        # STATE value requires both object_name and state; fill missing state so validation passes
+        if t == "STATE" and isinstance(item.get("value"), dict):
+            val = item["value"]
+            if "state" not in val or not isinstance(val.get("state"), str) or not str(val.get("state", "")).strip():
+                val = {**val, "state": (val.get("state") or "").strip() or "(unspecified)"}
+                item = {**item, "value": val}
+                warnings.append("STATE claim missing or empty 'state'; set to '(unspecified)'")
+        if t == "ACTION" and isinstance(item.get("value"), dict) and "qualifiers" in item["value"]:
+            item = {**item, "value": {k: v for k, v in item["value"].items() if k != "qualifiers"}}
         normalized.append(item)
     data["claims"] = normalized
     data["warnings"] = warnings
@@ -265,19 +319,45 @@ def _try_repair_truncated_json(s: str):  # returns dict or raises
     raise ValueError("JSON could not be parsed or repaired (possibly truncated)")
 
 
-def parse_stage1_v4(raw: str | dict[str, Any], chunk_id: str) -> Stage1ResultV4:
-    """Parse JSON (string or dict) and validate as Stage1ResultV4. Raises ValidationError on failure."""
+def parse_stage1_v4(raw: str | dict[str, Any] | list[Any], chunk_id: str) -> Stage1ResultV4:
+    """Parse JSON (string, dict, or list of claims) and validate as Stage1ResultV4. Raises ValidationError on failure."""
     import json
     if isinstance(raw, dict):
-        data = raw
+        data: Any = raw
+    elif isinstance(raw, list):
+        data = {"claims": raw, "warnings": []}
     else:
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
             data = _try_repair_truncated_json(raw)
+    # Accept root as array of claims (matches OUTPUT SCHEMA: list of { type, value, evidence })
+    if isinstance(data, list):
+        data = {"claims": data, "warnings": []}
     if not isinstance(data, dict):
-        raise ValueError("Expected a JSON object")
+        raise ValueError("Expected a JSON object or array of claims")
     if "chunk_id" not in data:
         data = {**data, "chunk_id": chunk_id}
+    # If root looks like a single claim (has type + evidence but no claims array), wrap in claims
+    if "claims" not in data or not isinstance(data.get("claims"), list):
+        if isinstance(data.get("type"), str) and "evidence" in data:
+            single_claim = {
+                "type": data["type"],
+                "evidence": data.get("evidence", []),
+                "value": data.get("value"),
+            }
+            if data.get("state") is not None:
+                single_claim["state"] = data["state"]
+            if data.get("action") is not None:
+                single_claim["action"] = data["action"]
+            data = {
+                **{k: v for k, v in data.items() if k not in ("type", "evidence", "state", "action", "value")},
+                "claims": [single_claim],
+                "warnings": data.get("warnings", []),
+            }
+            if "chunk_id" not in data:
+                data["chunk_id"] = chunk_id
+        else:
+            data.setdefault("claims", [])
     _normalize_claims_for_parsing(data, chunk_id)
     return Stage1ResultV4.model_validate(data)

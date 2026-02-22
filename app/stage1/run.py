@@ -77,8 +77,8 @@ def _persist_claims_and_evidence(
             rule_id=getattr(c, "rule_id", None),
         )
         for ev in c.evidence:
-            char_start = ev.chunk_ref.char_start if ev.chunk_ref else None
-            char_end = ev.chunk_ref.char_end if ev.chunk_ref else None
+            char_start = getattr(ev.chunk_ref, "char_start", None) if ev.chunk_ref else None
+            char_end = getattr(ev.chunk_ref, "char_end", None) if ev.chunk_ref else None
             claim_repo.create_evidence(
                 session,
                 claim_id=claim.id,
@@ -189,8 +189,6 @@ def run_stage1_extract(
                 config.model_id,
                 config.temperature,
                 config.max_tokens,
-                repair_attempts=config.repair_attempts,
-                repair_raw_max_chars=config.repair_raw_max_chars,
                 timeout_s=config.timeout_s,
                 prompt_version=config.prompt_version,
             )
