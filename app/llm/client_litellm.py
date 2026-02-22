@@ -61,6 +61,22 @@ def _map_exception(e: Exception, provider: LLMProvider) -> LLMError:
 def _request_to_kwargs(req: LLMRequest, model: str, timeout_s: float) -> dict[str, Any]:
     """Build LiteLLM completion kwargs from LLMRequest."""
     messages = [m.model_dump() for m in req.messages]
+    if req.cache_system_prompt and messages and messages[0].get("role") == "system":
+        content = messages[0].get("content")
+        if isinstance(content, str):
+            messages = [
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": content,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                },
+                *messages[1:],
+            ]
     kwargs: dict[str, Any] = {
         "model": model,
         "messages": messages,

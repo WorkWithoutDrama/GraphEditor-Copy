@@ -45,13 +45,25 @@ Output a single JSON object with key "claims" (array of claim objects). Root mus
 OUTPUT SCHEMA:
 {{ "claims": [ {{ "type": "<ACTOR/OBJECT/ACTION/STATE/DENY>", "value": {{ ... }}, "evidence": ["<verbatim quote from chunk>", ...] }}, ... ] }}
 
-EXAMPLE (format only—output many claims when chunk has many; do not copy these phrases):
+EXAMPLES FROM REAL CHUNKS (output many claims when your chunk has many; use verbatim evidence from *your* chunk only):
+
+Example A — Process steps (chunk like "Пользователь открывает карточку сделки... Система обновляет статус сделки"):
 {{ "claims": [
-  {{ "type": "ACTOR", "value": {{ "name": "<Actor1>" }}, "evidence": ["<exact substring>"] }},
-  {{ "type": "ACTOR", "value": {{ "name": "<Actor2>" }}, "evidence": ["<exact substring>"] }},
-  {{ "type": "OBJECT", "value": {{ "name": "<ObjectName>" }}, "evidence": ["<exact substring>"] }},
-  {{ "type": "ACTION", "value": {{ "actor": "<Actor1>", "verb": "<verb>", "object": "<ObjectName>" }}, "evidence": ["<exact substring>"] }},
-  {{ "type": "ACTION", "value": {{ "actor": "<Actor2>", "verb": "<verb>", "object": "<ObjectName>" }}, "evidence": ["<exact substring>"] }}
+  {{ "type": "ACTOR", "value": {{ "name": "Пользователь" }}, "evidence": ["Пользователь открывает карточку сделки"] }},
+  {{ "type": "ACTOR", "value": {{ "name": "Система" }}, "evidence": ["Система обновляет статус сделки"] }},
+  {{ "type": "OBJECT", "value": {{ "name": "Карточка сделки" }}, "evidence": ["карточку сделки"] }},
+  {{ "type": "OBJECT", "value": {{ "name": "Статус Сделки" }}, "evidence": ["статус сделки"] }},
+  {{ "type": "ACTION", "value": {{ "actor": "Пользователь", "verb": "открывает", "object": "Карточка сделки" }}, "evidence": ["Пользователь открывает карточку сделки"] }},
+  {{ "type": "ACTION", "value": {{ "actor": "Система", "verb": "обновляет", "object": "Статус сделки" }}, "evidence": ["Система обновляет статус сделки"] }}
+] }}
+
+Example B — Requirements list (chunk like "Пользователь создает задачу... отмечает задачу как выполненную"):
+{{ "claims": [
+  {{ "type": "ACTOR", "value": {{ "name": "Пользователь" }}, "evidence": ["Пользователь создает задачу"] }},
+  {{ "type": "OBJECT", "value": {{ "name": "Задача" }}, "evidence": ["Пользователь создает задачу"] }},
+  {{ "type": "STATE", "value": {{ "object_name": "Задача", "state": "Выполненная" }}, "evidence": ["отмечает задачу как выполненную"] }},
+  {{ "type": "ACTION", "value": {{ "actor": "Пользователь", "verb": "создает", "object": "Задача" }}, "evidence": ["Пользователь создает задачу"] }},
+  {{ "type": "ACTION", "value": {{ "actor": "Пользователь", "verb": "отмечает", "object": "Задача" }}, "evidence": ["Пользователь отмечает задачу как выполненную"] }}
 ] }}
 """.strip()
 

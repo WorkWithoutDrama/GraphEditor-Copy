@@ -5,7 +5,7 @@ from typing import Annotated, Literal, Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-PROMPT_VERSION_V4 = "chunk_claims_extract_v4_minimal_explicit"
+PROMPT_VERSION_V4 = "chunk_claims_extract_v4_minimal_explicit_v2"
 
 
 # --- Evidence V4 ---
@@ -129,7 +129,7 @@ ClaimV4 = Annotated[
 class Stage1ResultV4(BaseModel):
     # extra="ignore" so LLM output with claim fields duplicated at root still parses
     model_config = ConfigDict(extra="ignore")
-    prompt_version: Literal["chunk_claims_extract_v4_minimal_explicit"] = PROMPT_VERSION_V4
+    prompt_version: Literal["chunk_claims_extract_v4_minimal_explicit_v2"] = PROMPT_VERSION_V4
     chunk_id: str
     claims: list[ClaimV4] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)

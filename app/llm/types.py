@@ -41,6 +41,7 @@ class LLMRequest(BaseModel):
     metadata: dict[str, str] = Field(default_factory=dict)
     idempotency_key: str | None = None
     timeout_s: float | None = None
+    cache_system_prompt: bool = False
 
 
 class LLMUsage(BaseModel):

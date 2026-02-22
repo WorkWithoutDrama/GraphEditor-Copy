@@ -11,7 +11,7 @@ from app.stage1.parser_registry import parse_with_registry
 from app.stage1.schema import Stage1ExtractionResult
 from app.stage1.schema_v4 import Stage1ResultV4
 
-PROMPT_VERSION_V4 = "chunk_claims_extract_v4_minimal_explicit"
+PROMPT_VERSION_V4 = "chunk_claims_extract_v4_minimal_explicit_v2"
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +64,7 @@ async def extract_one_chunk(
         temperature=temperature,
         max_output_tokens=max_tokens,
         response_format={"type": "json_object"},
+        cache_system_prompt=True,
     )
     raw_text: str | None = None
     usage_dict: dict[str, Any] | None = None
