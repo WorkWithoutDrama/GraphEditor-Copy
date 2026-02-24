@@ -308,9 +308,36 @@ def run_stage1_extract(
                 session.commit()
             chunks_success += 1
 
-    # Embedding: when config.embed_claims is True, a separate embed_missing_claims job
-    # (by run_id or by claims where embedding_status != EMBEDDED) can embed and upsert to Qdrant.
-    # Claims are stored with embedding_status=PENDING.
+    # Embedding: when config.embed_claims is True, index claims to Qdrant (stage1_cards).
+    if config.embed_claims and claims_total > 0:
+        try:
+            from app.stage1.claim_index import index_stage1_claims_to_qdrant
+            index_stats = index_stage1_claims_to_qdrant(
+                run_id,
+                only_pending=True,
+                collection_name=config.qdrant_collection,
+                embedding_model_id=config.embedding_model_id,
+            )
+            if index_stats.error_summary:
+                logger.warning(
+                    "Claim indexing completed with errors for run %s: %s",
+                    run_id,
+                    index_stats.error_summary,
+                )
+            else:
+                logger.info(
+                    "Indexed %s claims to Qdrant for run %s (failed: %s)",
+                    index_stats.claims_indexed,
+                    run_id,
+                    index_stats.claims_failed,
+                )
+        except Exception as e:
+            logger.warning(
+                "Claim indexing failed for run %s (claims remain PENDING): %s",
+                run_id,
+                e,
+                exc_info=True,
+            )
 
     # Finalize run
     status = "SUCCESS" if chunks_failed == 0 else "PARTIAL"

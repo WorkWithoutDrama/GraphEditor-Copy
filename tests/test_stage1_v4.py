@@ -14,7 +14,12 @@ from app.stage1.schema_v4 import (
     ChunkRefV4,
 )
 from app.stage1.validators import validate_evidence_substrings
-from app.stage1.cards import claim_to_embedding_text_v4
+from app.stage1.cards import (
+    build_card_text,
+    build_dedupe_key,
+    build_embedding_text,
+    evidence_snippet_for_payload,
+)
 
 
 # ---- Evidence substring ----
@@ -371,13 +376,44 @@ def test_parse_array_root_and_output_schema_shape():
     assert result.claims[0].evidence[0].chunk_ref.chunk_id == "chunk-1"
 
 
-# ---- Card text ----
-def test_claim_to_embedding_text_v4():
-    assert claim_to_embedding_text_v4("ACTOR", {"name": "Пользователь"}) == "ACTOR | Пользователь"
-    assert claim_to_embedding_text_v4("OBJECT", {"name": "Проект"}) == "OBJECT | Проект"
-    assert claim_to_embedding_text_v4(
+# ---- Card text, embedding text, dedupe_key ----
+def test_build_card_text():
+    """Card text per claim type (display + payload)."""
+    assert build_card_text("ACTOR", {"name": "Пользователь"}) == "ACTOR | Пользователь"
+    assert build_card_text("OBJECT", {"name": "Проект"}) == "OBJECT | Проект"
+    assert build_card_text(
         "ACTION",
         {"actor": "Пользователь", "verb": "удаляет", "object": "Проект"},
-    ) == "ACTION | Пользователь | удаляет | Проект"
-    assert claim_to_embedding_text_v4("STATE", {"object_name": "Задача", "state": "Новая"}) == "STATE | Задача | Новая"
-    assert claim_to_embedding_text_v4("DENY", {"actor": "A", "verb": "v", "object": "O"}) == "DENY | A | v | O"
+    ) == "ACTION | Пользователь удаляет Проект"
+    assert build_card_text("STATE", {"object_name": "Задача", "state": "Новая"}) == "STATE | Задача | Новая"
+    assert build_card_text("DENY", {"actor": "A", "verb": "v", "object": "O"}) == "DENY | A !v O"
+
+
+def test_build_embedding_text():
+    """Embedding text includes evidence snippet."""
+    assert build_embedding_text("ACTOR", {"name": "Пользователь"}, "") == "ACTOR | Пользователь"
+    assert build_embedding_text("ACTOR", {"name": "Пользователь"}, "snippet") == "ACTOR: Пользователь. Evidence: snippet"
+    assert build_embedding_text(
+        "ACTION",
+        {"actor": "A", "verb": "v", "object": "O"},
+        "evidence",
+    ) == "ACTION: A v O. Evidence: evidence"
+
+
+def test_build_dedupe_key():
+    """Dedupe key is normalized and stable per type."""
+    assert build_dedupe_key("ACTOR", {"name": "Пользователь"}) == "actor::пользователь"
+    assert build_dedupe_key("ACTOR", {"name": "  A  B  "}) == "actor::a b"
+    assert build_dedupe_key("OBJECT", {"name": "Проект"}) == "object::проект"
+    assert build_dedupe_key(
+        "ACTION",
+        {"actor": "A", "verb": "v", "object": "O"},
+    ) == "action::a::v::o"
+    assert build_dedupe_key("STATE", {"object_name": "X", "state": "Y"}) == "state::x::y"
+    assert build_dedupe_key("DENY", {"actor": "A", "verb": "v", "object": "O"}) == "deny::a::v::o"
+
+
+def test_evidence_snippet_for_payload():
+    """Evidence snippet truncated to 300 chars for payload."""
+    assert evidence_snippet_for_payload("short") == "short"
+    assert len(evidence_snippet_for_payload("x" * 400)) == 300

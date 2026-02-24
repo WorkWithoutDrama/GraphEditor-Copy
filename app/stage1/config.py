@@ -29,7 +29,7 @@ class Stage1Config(BaseModel):
     repair_attempts: int = Field(default=1, ge=0, le=3)
     timeout_s: float = Field(default=240.0, gt=0, description="Timeout in seconds for LLM extraction and repair calls")
     embed_claims: bool = Field(default=True)
-    qdrant_collection: str = Field(default="claims_v1")
+    qdrant_collection: str = Field(default="stage1_cards")
     embedding_model_id: str | None = Field(default=None, description="Default: use app embedding model")
     # Limits
     claims_soft_warning: int = Field(default=CLAIMS_SOFT_WARNING)

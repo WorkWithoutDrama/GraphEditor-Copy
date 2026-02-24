@@ -87,6 +87,11 @@ class Claim(Base, IdMixin):
     embedding_status: Mapped[str] = mapped_column(String(32), nullable=False, default="PENDING", index=True)
     embedded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     embedding_model_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    qdrant_collection: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    qdrant_point_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    card_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dedupe_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    embedding_error: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     pipeline_run: Mapped["PipelineRun"] = relationship(  # noqa: F821
