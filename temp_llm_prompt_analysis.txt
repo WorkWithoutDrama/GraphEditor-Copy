@@ -1,0 +1,41 @@
+llm_calls with created_at >= 2026-02-25 23:50:21.526707
+Total: 7
+Valid (SUCCESS + non-empty response): 2
+Empty (PARSE_FAILED / empty or trivial): 5
+Other: 0
+
+============================================================
+VALID PROMPTS (summary)
+============================================================
+  len_system: min=2138 max=2138 avg=2138
+  len_user:   min=6438 max=6695 avg=6566
+  has chunk_excerpt (non-null): 2/2
+  has 'ProjectFlow Pro' (quoted): 0/2
+
+  2026-02-25 23:50:21.526707 | ACTOR | 7cb0add0... | sys=2138 user=6438 | excerpt=True | pf_quoted=False
+  2026-02-25 23:51:21.046364 | ACTOR | 689865d4... | sys=2138 user=6695 | excerpt=True | pf_quoted=False
+
+============================================================
+EMPTY PROMPTS (summary)
+============================================================
+  len_system: min=2138 max=2138 avg=2138
+  len_user:   min=6335 max=7119 avg=6769
+  has chunk_excerpt (non-null): 5/5
+  has 'ProjectFlow Pro' (quoted): 0/5
+
+  2026-02-25 23:51:34.760580 | ACTOR | 463ea645... | sys=2138 user=7064 | excerpt=True | pf_quoted=False
+  2026-02-25 23:51:46.198152 | ACTOR | b39d5651... | sys=2138 user=6668 | excerpt=True | pf_quoted=False
+  2026-02-25 23:51:59.279595 | ACTOR | 029b7e0b... | sys=2138 user=6661 | excerpt=True | pf_quoted=False
+  2026-02-25 23:52:11.661738 | ACTOR | 6bdab40f... | sys=2138 user=6335 | excerpt=True | pf_quoted=False
+  2026-02-25 23:52:24.914982 | ACTOR | c5196931... | sys=2138 user=7119 | excerpt=True | pf_quoted=False
+
+============================================================
+OTHER (parse failed but not empty, or other status)
+============================================================
+
+============================================================
+PROMPT BUILD ERRORS (analysis of prompt text)
+============================================================
+  No structural errors detected in any prompt.
+  (Checked: placeholder left in, context pack JSON parseable, required keys,
+   output schema present, no U+FFFD, no control chars, no backslash-newline)
