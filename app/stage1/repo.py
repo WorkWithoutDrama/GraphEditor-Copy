@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.models.chunk import Chunk
 from app.db.models.claim import Claim, ClaimEvidence, LlmCall
@@ -44,13 +44,14 @@ class Stage1RunRepo:
         prompt_version: str,
         extractor_version: str,
         model_id: str,
+        run_kind: str = "STAGE1_EXTRACT",
     ) -> PipelineRun:
         run = PipelineRun(
             id=str(uuid4()),
             workspace_id=workspace_id,
             document_id=document_id,
             status="RUNNING",
-            run_kind="STAGE1_EXTRACT",
+            run_kind=run_kind,
             config_json=json.dumps(config),
             stats_json=None,
             prompt_name=prompt_version,
@@ -79,6 +80,23 @@ class Stage1RunRepo:
         if error_summary is not None:
             run.error_summary = error_summary
         session.flush()
+
+    def list_runs(
+        self,
+        session: Session,
+        *,
+        document_id: str | None = None,
+        run_kind: str | None = "STAGE1_EXTRACT",
+        limit: int = 20,
+    ) -> list[PipelineRun]:
+        """List pipeline runs, newest first. Optionally filter by document_id and run_kind."""
+        q = select(PipelineRun).order_by(PipelineRun.started_at.desc())
+        if document_id is not None:
+            q = q.where(PipelineRun.document_id == document_id)
+        if run_kind is not None:
+            q = q.where(PipelineRun.run_kind == run_kind)
+        q = q.limit(limit)
+        return list(session.execute(q).scalars().all())
 
 
 class Stage1ChunkRunRepo:
@@ -336,3 +354,103 @@ class Stage1ClaimRepo:
             q = q.where(Claim.run_id == run_id)
         rows = session.execute(q).scalars().all()
         return list(rows)
+
+    # --- Stage-2 helpers ---
+
+    def list_claims_unreviewed_by_type(
+        self,
+        session: Session,
+        run_id: str,
+        claim_type: str,
+    ) -> list[Claim]:
+        """List claims with review_status=UNREVIEWED and given claim_type, ordered by created_at."""
+        q = (
+            select(Claim)
+            .where(
+                Claim.run_id == run_id,
+                Claim.review_status == "UNREVIEWED",
+                Claim.claim_type == claim_type,
+            )
+            .order_by(Claim.created_at.asc())
+        )
+        rows = session.execute(q).scalars().all()
+        return list(rows)
+
+    def list_accepted_claim_ids(
+        self,
+        session: Session,
+        run_id: str,
+        claim_type: str,
+    ) -> list[str]:
+        """List claim ids with review_status=ACCEPTED and given claim_type for the run (for Stage-2 closest canonical)."""
+        q = select(Claim.id).where(
+            Claim.run_id == run_id,
+            Claim.review_status == "ACCEPTED",
+            Claim.claim_type == claim_type,
+        )
+        rows = session.execute(q).scalars().all()
+        return [r[0] for r in rows]
+
+    def get_claim_with_evidence(self, session: Session, claim_id: str) -> Claim | None:
+        """Load claim by id with evidence eager-loaded."""
+        q = (
+            select(Claim)
+            .where(Claim.id == claim_id)
+            .options(joinedload(Claim.evidence))
+        )
+        return session.execute(q).unique().scalar_one_or_none()
+
+    def update_review_status(
+        self,
+        session: Session,
+        claim_id: str,
+        review_status: str,
+        *,
+        superseded_by_id: str | None = None,
+    ) -> bool:
+        """Update review_status and optionally superseded_by_id for a claim. Returns True if row was updated."""
+        claim = session.get(Claim, claim_id)
+        if not claim:
+            return False
+        claim.review_status = review_status
+        if superseded_by_id is not None:
+            claim.superseded_by_id = superseded_by_id
+        session.flush()
+        return True
+
+    def merge_value_json_stage2(
+        self,
+        session: Session,
+        claim_id: str,
+        stage2_data: dict,
+    ) -> bool:
+        """Merge stage2_data into value_json.stage2 for the claim. Returns True if updated."""
+        claim = session.get(Claim, claim_id)
+        if not claim:
+            return False
+        try:
+            value = json.loads(claim.value_json) if isinstance(claim.value_json, str) else dict(claim.value_json)
+        except (json.JSONDecodeError, TypeError):
+            value = {}
+        if "stage2" not in value:
+            value["stage2"] = {}
+        value["stage2"].update(stage2_data)
+        claim.value_json = json.dumps(value)
+        session.flush()
+        return True
+
+    def resolve_canonical_claim_id(self, session: Session, claim_id: str) -> str | None:
+        """Follow superseded_by_id chain to terminal (ACCEPTED) claim. Returns canonical claim_id or None if not found."""
+        seen: set[str] = set()
+        current_id = claim_id
+        while current_id:
+            if current_id in seen:
+                return None  # cycle
+            seen.add(current_id)
+            claim = session.get(Claim, current_id)
+            if not claim:
+                return None
+            if claim.review_status == "ACCEPTED":
+                return current_id
+            current_id = claim.superseded_by_id
+        return None

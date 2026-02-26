@@ -1,0 +1,588 @@
+Full prompt dumps for manual analysis of prompt building.
+Compare VALID vs EMPTY to spot differences.
+
+============================================================
+VALID (seed=7cb0add0-8dd2-4e20-ade1-28f67511bee9, created_at=2026-02-25 23:50:21.526707)
+============================================================
+
+--- USER PROMPT (first 8000 chars) ---
+You will receive a Context Pack containing:
+- Seed ACTOR claim (id, card_text, dedupe_key, value_json, evidence snippets, optional chunk excerpt)
+- Similar ACTOR candidates (same-type neighbors)
+- Cross-type context: a few ACTION/OBJECT/STATE claims
+- Optional ACCEPTED canonical ACTOR excerpts
+
+Task: decide whether the seed ACTOR is canonical, a duplicate, unsupported, needs deferral, or should be placed into a conflict group.
+
+Output: return ONLY JSON matching `output_schema.md`.
+Set `pass_kind="ACTOR"`.
+
+### Context Pack
+{
+  "pass_kind": "ACTOR",
+  "seed": {
+    "claim_id": "7cb0add0-8dd2-4e20-ade1-28f67511bee9",
+    "claim_type": "ACTOR",
+    "card_text": "ACTOR | Техническое задание",
+    "dedupe_key": "actor::техническое задание",
+    "value_json": {
+      "name": "Техническое задание"
+    },
+    "evidence": [
+      {
+        "chunk_id": "6bf69f3d-74bc-4fcb-a069-8f5af33fc395",
+        "snippet": "Техническое задание на разработку системы управления проектами"
+      }
+    ],
+    "chunk_excerpt": "Техническое задание на разработку системы управления проектами ProjectFlow Pro 2. Бизнес-требования 2.1 Цели системы - Повышение эффективности управления проектами на 40% - Сокращение времени на планирование проектов на 30% - Улучшение контроля за выполнением задач на 50% - Упрощение коммуникации между участниками проектов"
+  },
+  "same_type_neighbors": [
+    {
+      "claim_id": "463ea645-6a50-4143-99b7-227ad8290264",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Команды разработчиков",
+      "dedupe_key": "actor::команды разработчиков",
+      "value_json": {
+        "name": "Команды разработчиков"
+      },
+      "evidence_snippets": [
+        "Команды разработчиков"
+      ]
+    },
+    {
+      "claim_id": "543e38e2-73a5-4852-9e4a-5dd75a48fcf8",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Менеджер",
+      "dedupe_key": "actor::менеджер",
+      "value_json": {
+        "name": "Менеджер"
+      },
+      "evidence_snippets": [
+        "Менеджер контролирует выполнение задач"
+      ]
+    },
+    {
+      "claim_id": "62ff3054-49ff-48f6-864c-f0dd6fd9ddfe",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Пользователь",
+      "dedupe_key": "actor::пользователь",
+      "value_json": {
+        "name": "Пользователь"
+      },
+      "evidence_snippets": [
+        "Пользователь создает новую задачу в рамках проекта"
+      ]
+    },
+    {
+      "claim_id": "6aa6dbca-e4de-46c3-9832-e2036160d9ad",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Администратор",
+      "dedupe_key": "actor::администратор",
+      "value_json": {
+        "name": "Администратор"
+      },
+      "evidence_snippets": [
+        "Администратор добавляет сотрудников в систему"
+      ]
+    },
+    {
+      "claim_id": "849fc2d0-90f1-4f57-8302-60bb92af8ac0",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Исполнитель",
+      "dedupe_key": "actor::исполнитель",
+      "value_json": {
+        "name": "Исполнитель"
+      },
+      "evidence_snippets": [
+        "Исполнитель изменяет статус задачи"
+      ]
+    },
+    {
+      "claim_id": "c282472a-5744-4a85-8755-925ee3efa324",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Система",
+      "dedupe_key": "actor::система",
+      "value_json": {
+        "name": "Система"
+      },
+      "evidence_snippets": [
+        "Система отображает прогресс выполнения задач"
+      ]
+    }
+  ],
+  "cross_type": {
+    "OBJECT": [
+      {
+        "claim_id": "05da4eb5-47d0-4301-8258-9915736650eb",
+        "claim_type": "OBJECT",
+        "card_text": "OBJECT | Задача",
+        "dedupe_key": "object::задача",
+        "value_json": {
+          "name": "Задача"
+        },
+        "evidence_snippets": [
+          "Пользователь создает новую задачу в рамках проекта"
+        ]
+      },
+      {
+        "claim_id": "6af91029-c0c6-4c19-8ebc-f3f529828a20",
+        "claim_type": "OBJECT",
+        "card_text": "OBJECT | Обсуждение",
+        "dedupe_key": "object::обсуждение",
+        "value_json": {
+          "name": "Обсуждение"
+        },
+        "evidence_snippets": [
+          "по задачам"
+        ]
+      },
+      {
+        "claim_id": "f0c9e047-f284-428a-99e0-7702c8c3c64b",
+        "claim_type": "OBJECT",
+        "card_text": "OBJECT | Прогресс выполнения задачи",
+        "dedupe_key": "object::прогресс выполнения задачи",
+        "value_json": {
+          "name": "Прогресс выполнения задачи"
+        },
+        "evidence_snippets": [
+          "Система отображает прогресс выполнения задач"
+        ]
+      }
+    ],
+    "ACTION": [
+      {
+        "claim_id": "02984bda-107e-4e03-8252-fb7ee66501ed",
+        "claim_type": "ACTION",
+        "card_text": "ACTION | Система отображает Прогресс выполнения задачи",
+        "dedupe_key": "action::система::отображает::прогресс выполнения задачи",
+        "value_json": {
+          "actor": "Система",
+          "verb": "отображает",
+          "object": "Прогресс выполнения задачи"
+        },
+        "evidence_snippets": [
+          "Система отображает прогресс выполнения задач"
+        ]
+      },
+      {
+        "claim_id": "59d5b046-f171-487d-9806-554a84251df4",
+        "claim_type": "ACTION",
+        "card_text": "ACTION | Пользователь создает Задача",
+        "dedupe_key": "action::пользователь::создает::задача",
+        "value_json": {
+          "actor": "Пользователь",
+          "verb": "создает",
+          "object": "Задача"
+        },
+        "evidence_snippets": [
+          "Пользователь создает новую задачу в рамках проекта"
+        ]
+      },
+      {
+        "claim_id": "5b418eda-9109-48bc-952a-8ea51b2823a2",
+        "claim_type": "ACTION",
+        "card_text": "ACTION | Пользователь отправляет Команда",
+        "dedupe_key": "action::пользователь::отправляет::команда",
+        "value_json": {
+          "actor": "Пользователь",
+          "verb": "отправляет",
+          "object": "Команда"
+        },
+        "evidence_snippets": [
+          "Пользователь отправляет сообщения команде"
+        ]
+      },
+      {
+        "claim_id": "989e20c0-ee2b-4990-be91-fe161f57cb60",
+        "claim_type": "ACTION",
+        "card_text": "ACTION | Система создает Обсуждение",
+        "dedupe_key": "action::система::создает::обсуждение",
+        "value_json": {
+          "actor": "Система",
+          "verb": "создает",
+          "object": "Обсуждение"
+        },
+        "evidence_snippets": [
+          "Система создает обсуждения по задачам"
+        ]
+      }
+    ]
+  }
+}
+
+--- SYSTEM PROMPT (first 3000 chars) ---
+# Common Stage‑2 LLM Instructions (applies to all prompts)
+
+You are performing **Stage‑2 normalization/deduplication** over Stage‑1 claim cards.
+Stage‑1 claims are explicit-only and chunk-local; Stage‑2 must not invent new facts.
+
+## Hard rules
+1) Use only provided evidence (snippets / chunk excerpts). Do not infer unstated relationships.
+2) If evidence is insufficient, choose DEFER or SPLIT_CONFLICT rather than forcing a merge.
+3) Output valid JSON matching `output_schema.md`.
+4) When merging, specify canonical claim by `claim_id`.
+5) Every decision must cite at least one evidence_ref that exists in the context pack.
+
+## Rejecting hallucinations
+REJECT only when the claim is not supported by provided evidence.
+
+## Language
+Return canonical labels and aliases in the document language.
+
+You are a careful analyst performing Stage‑2 deduplication of ACTOR claim cards.
+
+## Output schema
+
+# Stage‑2 Decision Output Schema (JSON)
+
+All prompts must output a single JSON object matching this logical schema.
+
+```json
+{
+  "pass_kind": "ACTOR|OBJECT|STATE|ACTION",
+  "seed_claim_id": "uuid",
+  "decision": {
+    "kind": "ACCEPT_AS_CANONICAL|MERGE_INTO|REJECT|DEFER|SPLIT_CONFLICT",
+    "canonical_claim_id": "uuid|null",
+    "confidence": 0.0,
+    "rationale": "short text",
+    "evidence_refs": [
+      {
+        "claim_id": "uuid",
+        "evidence_id": "uuid|null",
+        "chunk_id": "uuid|null",
+        "snippet": "string|null"
+      }
+    ]
+  },
+  "normalization": {
+    "canonical_label": "string|null",
+    "aliases": ["string"],
+    "notes": "string|null"
+  },
+  "attachments": {
+    "object_claim_ids": ["uuid"],
+    "actor_claim_ids": ["uuid"],
+    "action_endpoints": {
+      "actor_claim_id": "uuid|null",
+      "object_claim_id": "uuid|null"
+    }
+  },
+  "conflict": {
+    "group_label": "string|null",
+    "members": [
+      { "claim_id": "uuid", "role": "seed|candidate|other", "reason": "string" }
+    ]
+  }
+}
+```
+
+Notes:
+- MERGE_INTO requires canonical_claim_id.
+- SPLIT_CONFLICT should fill conflict.members and leave canonical_claim_id null.
+- evidence_refs must reference provided context; do not fabricate IDs.
+
+============================================================
+EMPTY (seed=463ea645-6a50-4143-99b7-227ad8290264, created_at=2026-02-25 23:51:34.760580)
+============================================================
+
+--- USER PROMPT (first 8000 chars) ---
+You will receive a Context Pack containing:
+- Seed ACTOR claim (id, card_text, dedupe_key, value_json, evidence snippets, optional chunk excerpt)
+- Similar ACTOR candidates (same-type neighbors)
+- Cross-type context: a few ACTION/OBJECT/STATE claims
+- Optional ACCEPTED canonical ACTOR excerpts
+
+Task: decide whether the seed ACTOR is canonical, a duplicate, unsupported, needs deferral, or should be placed into a conflict group.
+
+Output: return ONLY JSON matching `output_schema.md`.
+Set `pass_kind="ACTOR"`.
+
+### Context Pack
+{
+  "pass_kind": "ACTOR",
+  "seed": {
+    "claim_id": "463ea645-6a50-4143-99b7-227ad8290264",
+    "claim_type": "ACTOR",
+    "card_text": "ACTOR | Команды разработчиков",
+    "dedupe_key": "actor::команды разработчиков",
+    "value_json": {
+      "name": "Команды разработчиков"
+    },
+    "evidence": [
+      {
+        "chunk_id": "fe5b6b66-e5c9-4c1b-9e1d-2145a3fec2c9",
+        "snippet": "Команды разработчиков"
+      }
+    ],
+    "chunk_excerpt": "Техническое задание на разработку системы управления проектами ProjectFlow Pro 2. Бизнес-требования 2.2 Целевая аудитория - Менеджеры проектов - Команды разработчиков - Руководители отделов - Клиенты и заказчики - Контролирующие органы"
+  },
+  "same_type_neighbors": [
+    {
+      "claim_id": "029b7e0b-05c7-4017-b05e-59a513ed033a",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Клиенты и заказчики",
+      "dedupe_key": "actor::клиенты и заказчики",
+      "value_json": {
+        "name": "Клиенты и заказчики"
+      },
+      "evidence_snippets": [
+        "Клиенты и заказчики"
+      ]
+    },
+    {
+      "claim_id": "5d95e0bc-96c3-4764-b854-8f8d4c9710c3",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Пользователь",
+      "dedupe_key": "actor::пользователь",
+      "value_json": {
+        "name": "Пользователь"
+      },
+      "evidence_snippets": [
+        "Пользователь просматривает доступность ресурсов"
+      ]
+    },
+    {
+      "claim_id": "689865d4-2cef-4244-9739-95278024e44b",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Менеджеры проектов",
+      "dedupe_key": "actor::менеджеры проектов",
+      "value_json": {
+        "name": "Менеджеры проектов"
+      },
+      "evidence_snippets": [
+        "Менеджеры проектов"
+      ]
+    },
+    {
+      "claim_id": "6aa6dbca-e4de-46c3-9832-e2036160d9ad",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Администратор",
+      "dedupe_key": "actor::администратор",
+      "value_json": {
+        "name": "Администратор"
+      },
+      "evidence_snippets": [
+        "Администратор добавляет сотрудников в систему"
+      ]
+    },
+    {
+      "claim_id": "7cb0add0-8dd2-4e20-ade1-28f67511bee9",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Техническое задание",
+      "dedupe_key": "actor::техническое задание",
+      "value_json": {
+        "name": "Техническое задание"
+      },
+      "evidence_snippets": [
+        "Техническое задание на разработку системы управления проектами"
+      ]
+    },
+    {
+      "claim_id": "849fc2d0-90f1-4f57-8302-60bb92af8ac0",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Исполнитель",
+      "dedupe_key": "actor::исполнитель",
+      "value_json": {
+        "name": "Исполнитель"
+      },
+      "evidence_snippets": [
+        "Исполнитель изменяет статус задачи"
+      ]
+    },
+    {
+      "claim_id": "a371fc7b-6a94-4688-8059-3d773763f29c",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Менеджер",
+      "dedupe_key": "actor::менеджер",
+      "value_json": {
+        "name": "Менеджер"
+      },
+      "evidence_snippets": [
+        "Менеджер назначает роли сотрудникам"
+      ]
+    },
+    {
+      "claim_id": "f1f34cd9-e4a7-4d1a-85de-9809fb56f7b3",
+      "claim_type": "ACTOR",
+      "card_text": "ACTOR | Система",
+      "dedupe_key": "actor::система",
+      "value_json": {
+        "name": "Система"
+      },
+      "evidence_snippets": [
+        "Система автоматически рассчитывает затраты"
+      ]
+    }
+  ],
+  "cross_type": {
+    "ACTION": [
+      {
+        "claim_id": "210ced54-82db-429f-87a8-d0e580636a11",
+        "claim_type": "ACTION",
+        "card_text": "ACTION | Администратор добавляет Сотрудник",
+        "dedupe_key": "action::администратор::добавляет::сотрудник",
+        "value_json": {
+          "actor": "Администратор",
+          "verb": "добавляет",
+          "object": "Сотрудник"
+        },
+        "evidence_snippets": [
+          "Администратор добавляет сотрудников в систему"
+        ]
+      },
+      {
+        "claim_id": "238aff36-d9b6-41c8-862c-80554c413d7f",
+        "claim_type": "ACTION",
+        "card_text": "ACTION | Пользователь просматривает Ресурс",
+        "dedupe_key": "action::пользователь::просматривает::ресурс",
+        "value_json": {
+          "actor": "Пользователь",
+          "verb": "просматривает",
+          "object": "Ресурс"
+        },
+        "evidence_snippets": [
+          "Пользователь просматривает доступность ресурсов"
+        ]
+      },
+      {
+        "claim_id": "38a0ab4c-3c8a-4dc4-a2c5-f5fd5a9bdd31",
+        "claim_type": "ACTION",
+        "card_text": "ACTION | Система контролирует Использование ресурсов",
+        "dedupe_key": "action::система::контролирует::использование ресурсов",
+        "value_json": {
+          "actor": "Система",
+          "verb": "контролирует",
+          "object": "Использование ресурсов"
+        },
+        "evidence_snippets": [
+          "Система контролирует использование ресурсов"
+        ]
+      },
+      {
+        "claim_id": "6a3faf62-266c-4bcc-9fbc-fac34700a26e",
+        "claim_type": "ACTION",
+        "card_text": "ACTION | Менеджер назначает Роль",
+        "dedupe_key": "action::менеджер::назначает::роль",
+        "value_json": {
+          "actor": "Менеджер",
+          "verb": "назначает",
+          "object": "Роль"
+        },
+        "evidence_snippets": [
+          "Менеджер назначает роли сотрудникам"
+        ]
+      }
+    ],
+    "OBJECT": [
+      {
+        "claim_id": "05da4eb5-47d0-4301-8258-9915736650eb",
+        "claim_type": "OBJECT",
+        "card_text": "OBJECT | Задача",
+        "dedupe_key": "object::задача",
+        "value_json": {
+          "name": "Задача"
+        },
+        "evidence_snippets": [
+          "Пользователь создает новую задачу в рамках проекта"
+        ]
+      },
+      {
+        "claim_id": "7d53b0ff-5bc9-4a36-aadd-6aa73a1220e6",
+        "claim_type": "OBJECT",
+        "card_text": "OBJECT | Уведомление о приближении сроков",
+        "dedupe_key": "object::уведомление о приближении сроков",
+        "value_json": {
+          "name": "Уведомление о приближении сроков"
+        },
+        "evidence_snippets": [
+          "Система генерирует уведомления о приближении сроков"
+        ]
+      },
+      {
+        "claim_id": "9afd322d-cc21-4684-90a8-c07d7ca9ca9f",
+        "claim_type": "OBJECT",
+        "card_text": "OBJECT | Затраты",
+        "dedupe_key": "object::затраты",
+        "value_json": {
+          "name": "Затраты"
+        },
+        "evidence_snippets": [
+          "Система автоматически рассчитывает затраты"
+        ]
+      }
+    ]
+  }
+}
+
+--- SYSTEM PROMPT (first 3000 chars) ---
+# Common Stage‑2 LLM Instructions (applies to all prompts)
+
+You are performing **Stage‑2 normalization/deduplication** over Stage‑1 claim cards.
+Stage‑1 claims are explicit-only and chunk-local; Stage‑2 must not invent new facts.
+
+## Hard rules
+1) Use only provided evidence (snippets / chunk excerpts). Do not infer unstated relationships.
+2) If evidence is insufficient, choose DEFER or SPLIT_CONFLICT rather than forcing a merge.
+3) Output valid JSON matching `output_schema.md`.
+4) When merging, specify canonical claim by `claim_id`.
+5) Every decision must cite at least one evidence_ref that exists in the context pack.
+
+## Rejecting hallucinations
+REJECT only when the claim is not supported by provided evidence.
+
+## Language
+Return canonical labels and aliases in the document language.
+
+You are a careful analyst performing Stage‑2 deduplication of ACTOR claim cards.
+
+## Output schema
+
+# Stage‑2 Decision Output Schema (JSON)
+
+All prompts must output a single JSON object matching this logical schema.
+
+```json
+{
+  "pass_kind": "ACTOR|OBJECT|STATE|ACTION",
+  "seed_claim_id": "uuid",
+  "decision": {
+    "kind": "ACCEPT_AS_CANONICAL|MERGE_INTO|REJECT|DEFER|SPLIT_CONFLICT",
+    "canonical_claim_id": "uuid|null",
+    "confidence": 0.0,
+    "rationale": "short text",
+    "evidence_refs": [
+      {
+        "claim_id": "uuid",
+        "evidence_id": "uuid|null",
+        "chunk_id": "uuid|null",
+        "snippet": "string|null"
+      }
+    ]
+  },
+  "normalization": {
+    "canonical_label": "string|null",
+    "aliases": ["string"],
+    "notes": "string|null"
+  },
+  "attachments": {
+    "object_claim_ids": ["uuid"],
+    "actor_claim_ids": ["uuid"],
+    "action_endpoints": {
+      "actor_claim_id": "uuid|null",
+      "object_claim_id": "uuid|null"
+    }
+  },
+  "conflict": {
+    "group_label": "string|null",
+    "members": [
+      { "claim_id": "uuid", "role": "seed|candidate|other", "reason": "string" }
+    ]
+  }
+}
+```
+
+Notes:
+- MERGE_INTO requires canonical_claim_id.
+- SPLIT_CONFLICT should fill conflict.members and leave canonical_claim_id null.
+- evidence_refs must reference provided context; do not fabricate IDs.

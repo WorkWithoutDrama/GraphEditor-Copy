@@ -62,6 +62,33 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
         return 1
 
 
+def _cmd_stage2(args: argparse.Namespace) -> int:
+    """Run Stage-2 normalization on a Stage-1 run."""
+    init_db()
+    from app.stage2.runner import run_stage2
+
+    try:
+        result = run_stage2(
+            args.run,
+            args.model_id,
+            collection_name=args.collection or "stage1_cards",
+            timeout_s=args.timeout,
+            max_tokens=args.max_tokens,
+        )
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    if result.get("error"):
+        print(f"Error: {result['error']}", file=sys.stderr)
+        return 1
+    print(f"stage2_run_id={result.get('stage2_run_id')}")
+    print(f"status={result.get('status')}")
+    if result.get("stats"):
+        print(json.dumps(result["stats"], indent=2))
+    return 0
+
+
 def _cmd_inspect(args: argparse.Namespace) -> int:
     from app.db.repositories.pipeline_run_repo import ChunkExtractionRepo, PipelineRunRepo
     from app.db.session import session_scope
@@ -116,6 +143,14 @@ def main() -> int:
     p_inspect.add_argument("--run", "-r", required=True, help="Pipeline run ID")
     p_inspect.add_argument("--limit", "-n", type=int, default=5, help="Max extractions to show (default: 5)")
     p_inspect.set_defaults(func=_cmd_inspect)
+
+    p_stage2 = sub.add_parser("stage2", help="Run Stage-2 normalization on a Stage-1 run (dedupe + canonicalize claims)")
+    p_stage2.add_argument("--run", "-r", required=True, help="Stage-1 pipeline run ID to normalize")
+    p_stage2.add_argument("--model-id", "-m", default="ollama/llama3.2", help="LLM model (default: ollama/llama3.2)")
+    p_stage2.add_argument("--collection", default=None, help="Qdrant collection (default: stage1_cards)")
+    p_stage2.add_argument("--timeout", type=float, default=120.0, help="LLM timeout seconds (default: 120)")
+    p_stage2.add_argument("--max-tokens", type=int, default=2048, help="Max output tokens (default: 2048)")
+    p_stage2.set_defaults(func=_cmd_stage2)
 
     args = parser.parse_args()
     return args.func(args)

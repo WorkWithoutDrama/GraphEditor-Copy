@@ -44,9 +44,25 @@ def cmd_extract(args: argparse.Namespace) -> int:
 def cmd_index_qdrant(args: argparse.Namespace) -> int:
     init_db()
     from app.stage1.claim_index import index_stage1_claims_to_qdrant
+    from app.stage1.repo import Stage1RunRepo
+    from app.db.session import session_scope
+
+    run_id = args.run_id
+    if run_id is None and getattr(args, "doc_id", None):
+        with session_scope() as session:
+            run_repo = Stage1RunRepo()
+            runs = run_repo.list_runs(session, document_id=args.doc_id, limit=1)
+            if not runs:
+                print("No Stage-1 run found for document. Run extract first.", file=sys.stderr)
+                return 1
+            run_id = runs[0].id
+            print(f"Using latest run for doc: run_id={run_id}")
+    if run_id is None:
+        print("Either --run-id or --doc-id is required.", file=sys.stderr)
+        return 1
 
     stats = index_stage1_claims_to_qdrant(
-        args.run_id,
+        run_id,
         only_pending=not args.all,
         collection_name=args.collection or None,
     )
@@ -56,6 +72,28 @@ def cmd_index_qdrant(args: argparse.Namespace) -> int:
     if stats.error_summary:
         print(f"error_summary={stats.error_summary}", file=sys.stderr)
         return 1
+    return 0
+
+
+def cmd_list_runs(args: argparse.Namespace) -> int:
+    init_db()
+    from app.stage1.repo import Stage1RunRepo
+    from app.db.session import session_scope
+
+    with session_scope() as session:
+        run_repo = Stage1RunRepo()
+        runs = run_repo.list_runs(
+            session,
+            document_id=getattr(args, "doc_id", None),
+            limit=args.limit,
+        )
+    if not runs:
+        print("No Stage-1 runs found.")
+        return 0
+    print("run_id\tdocument_id\tstatus\tstarted_at")
+    for r in runs:
+        started = r.started_at.isoformat() if r.started_at else ""
+        print(f"{r.id}\t{r.document_id}\t{r.status}\t{started}")
     return 0
 
 
@@ -79,13 +117,20 @@ def main() -> int:
 
     # stage1 index_qdrant
     index_parser = subparsers.add_parser("index_qdrant", help="Index run claims to Qdrant (stage1_cards)")
-    index_parser.add_argument("--run-id", required=True, help="Pipeline run ID")
+    index_parser.add_argument("--run-id", default=None, help="Pipeline run ID (or use --doc-id to use latest run for document)")
+    index_parser.add_argument("--doc-id", default=None, help="Document ID: use latest Stage-1 run for this document")
     index_parser.add_argument("--all", action="store_true", help="Index all claims (default: only pending)")
     index_parser.add_argument("--collection", default=None, help="Qdrant collection name (default: stage1_cards)")
     index_parser.set_defaults(func=cmd_index_qdrant)
 
+    # stage1 list_runs
+    list_parser = subparsers.add_parser("list_runs", help="List Stage-1 runs (to obtain run_id for index_qdrant)")
+    list_parser.add_argument("--doc-id", default=None, help="Filter by document ID")
+    list_parser.add_argument("--limit", type=int, default=20, help="Max runs to show (default: 20)")
+    list_parser.set_defaults(func=cmd_list_runs)
+
     argv = sys.argv[1:]
-    if argv and argv[0] in ("extract", "index_qdrant"):
+    if argv and argv[0] in ("extract", "index_qdrant", "list_runs"):
         args = parser.parse_args()
     else:
         # Backward compat: no subcommand -> extract (e.g. --doc-id xxx)

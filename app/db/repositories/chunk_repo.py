@@ -1,4 +1,5 @@
 """Chunk repository — bulk create or get by (document_id, chunk_hash)."""
+import re
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -153,3 +154,70 @@ class ChunkRepo:
             .order_by(Chunk.chunk_index)
         ).all()
         return [(r.id, r.text, r.chunk_index) for r in rows]
+
+    def get_by_ids(
+        self,
+        session: Session,
+        chunk_ids: list[str],
+        *,
+        max_text_chars: int | None = None,
+    ) -> dict[str, str]:
+        """Return mapping chunk_id -> text for given ids. If max_text_chars set, truncate text for excerpts."""
+        if not chunk_ids:
+            return {}
+        q = select(Chunk.id, Chunk.text).where(Chunk.id.in_(chunk_ids))
+        rows = session.execute(q).all()
+        out: dict[str, str] = {}
+        for r in rows:
+            text = (r.text or "").strip()
+            if max_text_chars is not None and len(text) > max_text_chars:
+                text = text[:max_text_chars] + "..."
+            out[r.id] = text
+        return out
+
+    def get_excerpt_around_snippet(
+        self,
+        session: Session,
+        chunk_id: str,
+        snippet_text: str,
+        *,
+        before_chars: int = 100,
+        after_chars: int = 100,
+        fallback_chars: int = 200,
+    ) -> str:
+        """
+        Return a window of chunk text centered on the first occurrence of snippet_text.
+        Format: [before_chars chars] + snippet + [after_chars chars], with "..." when truncated.
+        If snippet is not found, return the first fallback_chars of the chunk.
+        """
+        mapping = self.get_by_ids(session, [chunk_id])
+        text = (mapping.get(chunk_id) or "").strip()
+        if not text:
+            return ""
+        snippet = (snippet_text or "").strip()
+        if not snippet:
+            if len(text) <= fallback_chars:
+                return text
+            return text[:fallback_chars] + "..."
+        idx = text.find(snippet)
+        if idx == -1:
+            # Try normalizing whitespace: collapse runs to single space
+            snippet_norm = re.sub(r"\s+", " ", snippet)
+            text_norm = re.sub(r"\s+", " ", text)
+            idx_norm = text_norm.find(snippet_norm)
+            if idx_norm != -1:
+                text = text_norm
+                idx = idx_norm
+            else:
+                if len(text) <= fallback_chars:
+                    return text
+                return text[:fallback_chars] + "..."
+        start = max(0, idx - before_chars)
+        end = min(len(text), idx + len(snippet) + after_chars)
+        out = ""
+        if start > 0:
+            out += "..."
+        out += text[start:end]
+        if end < len(text):
+            out += "..."
+        return out
